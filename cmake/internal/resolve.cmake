@@ -1,0 +1,236 @@
+set(_CATALOG_REPOS "" CACHE INTERNAL "Loaded repositories")
+set(_CATALOG_DIRECT_RECIPES "" CACHE INTERNAL "Direct recipe paths")
+set(_CATALOG_ALL_RECIPES "" CACHE INTERNAL "All registered recipes")
+
+function(_catalog_load_repo_meta REPO_SOURCE)
+  _catalog_resolve_repo_url(${REPO_SOURCE} RESOLVED_URL REPO_TYPE REPO_BASE REPO_NAME)
+  _catalog_log_verbose("Loading repository ${REPO_NAME} (${REPO_TYPE}) from ${RESOLVED_URL}")
+  
+  _catalog_load_recipe(${RESOLVED_URL} REPO_FILE)
+  
+  unset(CATALOG_RECIPES)
+  include(${REPO_FILE})
+  
+  if(NOT DEFINED CATALOG_RECIPES)
+    _catalog_log(FATAL_ERROR "Repository meta.cmake did not define CATALOG_RECIPES")
+  endif()
+  
+  if(REPO_TYPE STREQUAL "local")
+    set(CATALOG_REPO_DIR "${REPO_BASE}" PARENT_SCOPE)
+  else()
+    set(CATALOG_REPO_DIR "" PARENT_SCOPE)
+  endif()
+  set(CATALOG_REPO_NAME "${REPO_NAME}" PARENT_SCOPE)
+  set(CATALOG_REPO_TYPE "${REPO_TYPE}" PARENT_SCOPE)
+  
+  set(NEW_RECIPES "")
+  foreach(RECIPE ${CATALOG_RECIPES})
+    if(RECIPE MATCHES "^([^:]+):(.+)$")
+      set(RECIPE_NAME "${CMAKE_MATCH_1}")
+      set(RECIPE_PATH "${CMAKE_MATCH_2}")
+      
+      if(RECIPE_PATH MATCHES "^https?://" OR RECIPE_PATH MATCHES "^/")
+        set(RESOLVED_RECIPE "${RECIPE_PATH}")
+      else()
+        set(RESOLVED_RECIPE "${REPO_BASE}/${RECIPE_PATH}")
+      endif()
+      
+      list(APPEND NEW_RECIPES "${RECIPE_NAME}:${RESOLVED_RECIPE}")
+    endif()
+  endforeach()
+  
+  set(_CATALOG_ALL_RECIPES "${_CATALOG_ALL_RECIPES};${NEW_RECIPES}" CACHE INTERNAL "All registered recipes")
+  set(CATALOG_RECIPES "${CATALOG_RECIPES}" PARENT_SCOPE)
+  
+  list(APPEND _CATALOG_REPOS "${RESOLVED_URL}")
+  set(_CATALOG_REPOS "${_CATALOG_REPOS}" CACHE INTERNAL "Loaded repositories")
+endfunction()
+
+function(_catalog_add_recipe PACKAGE_NAME RECIPE_SOURCE)
+  _catalog_resolve_recipe_url(${RECIPE_SOURCE} RESOLVED_URL)
+  list(APPEND _CATALOG_DIRECT_RECIPES "${PACKAGE_NAME}:${RESOLVED_URL}")
+  set(_CATALOG_DIRECT_RECIPES "${_CATALOG_DIRECT_RECIPES}" CACHE INTERNAL "Direct recipe paths")
+endfunction()
+
+function(_catalog_find_recipe PACKAGE_NAME RECIPE_PATH_VAR)
+  foreach(RECIPE ${_CATALOG_DIRECT_RECIPES})
+    if(RECIPE MATCHES "^${PACKAGE_NAME}:")
+      string(REGEX REPLACE "^${PACKAGE_NAME}:" "" RECIPE_PATH "${RECIPE}")
+      set(${RECIPE_PATH_VAR} "${RECIPE_PATH}" PARENT_SCOPE)
+      return()
+    endif()
+  endforeach()
+  
+  foreach(RECIPE ${_CATALOG_ALL_RECIPES})
+    if(RECIPE MATCHES "^${PACKAGE_NAME}:")
+      string(REGEX REPLACE "^${PACKAGE_NAME}:" "" RECIPE_PATH "${RECIPE}")
+      set(${RECIPE_PATH_VAR} "${RECIPE_PATH}" PARENT_SCOPE)
+      return()
+    endif()
+  endforeach()
+  
+  if(NOT _CATALOG_ALL_RECIPES AND NOT _CATALOG_DIRECT_RECIPES)
+    _catalog_log(FATAL_ERROR "No recipes or repositories loaded. Use catalog_repo() or catalog_add_recipe() first.")
+  else()
+    _catalog_log(FATAL_ERROR "Recipe not found: ${PACKAGE_NAME}")
+  endif()
+endfunction()
+
+function(_catalog_alias_target PACKAGE_NAME)
+  if(TARGET deps::${PACKAGE_NAME})
+    return()
+  endif()
+
+  _catalog_find_target_alias(${PACKAGE_NAME} TARGET_NAME)
+  
+  if(TARGET_NAME)
+    add_library(deps::${PACKAGE_NAME} ALIAS ${TARGET_NAME})
+    _catalog_log_verbose("Created alias deps::${PACKAGE_NAME} -> ${TARGET_NAME}")
+    return()
+  endif()
+  
+  _catalog_log_verbose("No target found for ${PACKAGE_NAME} in this stage")
+endfunction()
+
+function(_catalog_execute_stage PACKAGE_NAME STAGE)
+  if(TARGET deps::${PACKAGE_NAME})
+    return()
+  endif()
+
+  set(RECIPE_FUNC "_recipe_${PACKAGE_NAME}_${STAGE}")
+  
+  if(COMMAND ${RECIPE_FUNC})
+    _catalog_log_verbose("Executing ${STAGE} stage for ${PACKAGE_NAME}")
+    cmake_language(CALL ${RECIPE_FUNC})
+  endif()
+  
+  _catalog_alias_target(${PACKAGE_NAME})
+endfunction()
+
+function(_catalog_prompt_install PACKAGE_NAME)
+  set(_CATALOG_FAILED_PACKAGE_STAGE FALSE PARENT_SCOPE)
+
+  set(IS_INTERACTIVE TRUE)
+  if(DEFINED ENV{CI} OR DEFINED CATALOG_NON_INTERACTIVE OR DEFINED ENV{CATALOG_NON_INTERACTIVE})
+    set(IS_INTERACTIVE FALSE)
+  endif()
+  
+  if(NOT IS_INTERACTIVE)
+    _catalog_log_verbose("Non-interactive environment detected, skipping package installation prompt.")
+    set(_CATALOG_FAILED_PACKAGE_STAGE TRUE PARENT_SCOPE)
+    return()
+  endif()
+  
+  _catalog_log(STATUS "Install ${PACKAGE_NAME} using ${CATALOG_PACKAGE_MANAGER}? [y/n]")
+  
+  execute_process(
+    COMMAND sh -c "read -t 30 -n 1 -p '' REPLY; echo \$REPLY; echo"
+    OUTPUT_VARIABLE USER_INPUT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    TIMEOUT 30
+  )
+  
+  if(USER_INPUT MATCHES "^[yY]$")
+    _catalog_log(STATUS "Installing ${PACKAGE_NAME}...")
+    
+    if(CATALOG_PACKAGE_MANAGER STREQUAL "apt")
+      execute_process(COMMAND sudo apt-get install -y ${CATALOG_PACKAGE_NAME})
+    elseif(CATALOG_PACKAGE_MANAGER STREQUAL "pacman")
+      execute_process(COMMAND sudo pacman -S --noconfirm ${CATALOG_PACKAGE_NAME})
+    elseif(CATALOG_PACKAGE_MANAGER STREQUAL "brew")
+      execute_process(COMMAND brew install ${CATALOG_PACKAGE_NAME})
+    elseif(CATALOG_PACKAGE_MANAGER STREQUAL "yum")
+      execute_process(COMMAND sudo yum install -y ${CATALOG_PACKAGE_NAME})
+    elseif(CATALOG_PACKAGE_MANAGER STREQUAL "apk")
+      execute_process(COMMAND sudo apk add ${CATALOG_PACKAGE_NAME})
+    elseif(CATALOG_PACKAGE_MANAGER STREQUAL "zypper")
+      execute_process(COMMAND sudo zypper install -y ${CATALOG_PACKAGE_NAME})
+    elseif(CATALOG_PACKAGE_MANAGER STREQUAL "emerge")
+      execute_process(COMMAND sudo emerge ${CATALOG_PACKAGE_NAME})
+    else()
+      _catalog_log_verbose("Unknown package manager detected, trying remaining stages...")
+      set(_CATALOG_FAILED_PACKAGE_STAGE TRUE PARENT_SCOPE)
+      return()
+    endif()
+    
+    _catalog_log_verbose("Installation command executed.")
+  else()
+    _catalog_log_verbose(STATUS "${PACKAGE_NAME}: package install skipped, trying remaining stages...")
+    set(_CATALOG_FAILED_PACKAGE_STAGE TRUE PARENT_SCOPE)
+  endif()
+endfunction()
+
+function(_catalog_resolve_dependency PACKAGE_NAME)
+  if(TARGET deps::${PACKAGE_NAME})
+    _catalog_log_verbose("${PACKAGE_NAME}: already resolved, skipping")
+    return()
+  endif()
+  
+  _catalog_find_recipe(${PACKAGE_NAME} RECIPE_PATH)
+  _catalog_load_recipe(${RECIPE_PATH} RECIPE_FILE)
+  include(${RECIPE_FILE})
+  
+  set(STAGES toolchain system package prebuilt source)
+  
+  if(DEFINED CATALOG_STAGES)
+    set(STAGES ${CATALOG_STAGES})
+  endif()
+  
+  if(DEFINED CATALOG_${PACKAGE_NAME}_STAGES)
+    set(STAGES ${CATALOG_${PACKAGE_NAME}_STAGES})
+  endif()
+  
+  set(FORCED_STAGE "")
+  foreach(S ${STAGES})
+    if(CATALOG_FORCE_${S}_${PACKAGE_NAME})
+      set(FORCED_STAGE "${S}")
+      break()
+    endif()
+  endforeach()
+  
+  if(NOT FORCED_STAGE STREQUAL "")
+    set(STAGES "${FORCED_STAGE}")
+  endif()
+  
+  foreach(STAGE ${STAGES})
+    if(DEFINED CATALOG_DISABLE_${STAGE}_${PACKAGE_NAME})
+      continue()
+    endif()
+    
+    if(STAGE STREQUAL "package")
+      if(DEFINED CATALOG_DISABLE_system_${PACKAGE_NAME})
+        continue()
+      endif()
+
+      set(RECIPE_FUNC "_recipe_${PACKAGE_NAME}_package")
+      if(COMMAND ${RECIPE_FUNC})
+        _catalog_log_verbose("Querying package stage for ${PACKAGE_NAME}")
+        cmake_language(CALL ${RECIPE_FUNC})
+        
+        if(DEFINED CATALOG_PACKAGE_NAME AND CATALOG_PACKAGE_MANAGER)
+          _catalog_prompt_install(${PACKAGE_NAME})
+          if(_CATALOG_FAILED_PACKAGE_STAGE)
+            continue()
+          endif()
+
+          _catalog_execute_stage(${PACKAGE_NAME} system)
+          
+          if(TARGET deps::${PACKAGE_NAME})
+            _catalog_log_verbose(STATUS "${PACKAGE_NAME}: resolved via package manager")
+            return()
+          endif()
+        endif()
+        unset(CATALOG_PACKAGE_NAME)
+      endif()
+    else()
+      _catalog_execute_stage(${PACKAGE_NAME} ${STAGE})
+      
+      if(TARGET deps::${PACKAGE_NAME})
+        _catalog_log(STATUS "${PACKAGE_NAME}: resolved via ${STAGE}")
+        return()
+      endif()
+    endif()
+  endforeach()
+  
+  _catalog_log(FATAL_ERROR "Failed to resolve dependency: ${PACKAGE_NAME}")
+endfunction()
