@@ -7,20 +7,26 @@ function(_recipe_SDL2_toolchain)
 endfunction()
 
 function(_recipe_SDL2_system)
+  cl_format_pkgconfig_req("sdl2" "${CL_VERSION_REQ}" PKG_SPEC)
+
   if(CL_STATIC)
     find_package(PkgConfig QUIET)
     if(PkgConfig_FOUND)
-      pkg_check_modules(SDL2 IMPORTED_TARGET GLOBAL "--static" "sdl2>=2.0.0")
+      pkg_check_modules(SDL2 IMPORTED_TARGET GLOBAL "--static" ${PKG_SPEC})
     endif()
   else()
     if(NOT CMAKE_CROSSCOMPILING)
-      find_package(SDL2 QUIET)
+      if(CL_REQ_VERSION)
+        find_package(SDL2 ${CL_REQ_VERSION} QUIET)
+      else()
+        find_package(SDL2 QUIET)
+      endif()
     endif()
 
     if(NOT TARGET SDL2 AND NOT TARGET SDL2::SDL2)
       find_package(PkgConfig QUIET)
       if(PkgConfig_FOUND)
-        pkg_check_modules(SDL2 IMPORTED_TARGET GLOBAL "sdl2>=2.0.0")
+        pkg_check_modules(SDL2 IMPORTED_TARGET GLOBAL ${PKG_SPEC})
       endif()
     endif()
   endif()
@@ -59,9 +65,14 @@ function(_recipe_SDL2_source)
     set(SDL_BUILD_STATIC "OFF")
   endif()
 
+  set(SDL_TAG "release-2.32.10")
+  if(CL_REQ_VERSION)
+    set(SDL_TAG "release-${CL_REQ_VERSION}")
+  endif()
+
   cl_import_source(
     NAME SDL2
-    URL https://github.com/libsdl-org/SDL/archive/refs/tags/release-2.32.10.tar.gz
+    URL https://github.com/libsdl-org/SDL/archive/refs/tags/${SDL_TAG}.tar.gz
     OPTIONS "SDL_SHARED" "${SDL_BUILD_SHARED}" "SDL_STATIC" "${SDL_BUILD_STATIC}" "SDL_TEST" "OFF"
   )
 endfunction()

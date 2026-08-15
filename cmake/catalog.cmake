@@ -18,12 +18,22 @@ function(_catalog_impl_add_dependency)
   set(POSITIONALS "")
   set(LINK_SCOPE "")
   set(REQ_TYPE "")
+  set(VERSION_SPEC "")
+
+  set(EXPECTING_VERSION FALSE)
 
   foreach(ARG ${ARGN})
-    if(ARG STREQUAL "PUBLIC" OR ARG STREQUAL "PRIVATE" OR ARG STREQUAL "INTERFACE")
+    if(EXPECTING_VERSION)
+      set(VERSION_SPEC "${ARG}")
+      set(EXPECTING_VERSION FALSE)
+    elseif(ARG STREQUAL "VERSION")
+      set(EXPECTING_VERSION TRUE)
+    elseif(ARG STREQUAL "PUBLIC" OR ARG STREQUAL "PRIVATE" OR ARG STREQUAL "INTERFACE")
       set(LINK_SCOPE "${ARG}")
     elseif(ARG STREQUAL "STATIC" OR ARG STREQUAL "SHARED" OR ARG STREQUAL "PREFER_STATIC" OR ARG STREQUAL "PREFER_SHARED")
       set(REQ_TYPE "${ARG}")
+    elseif(ARG MATCHES "^[0-9]+(\\.[0-9]+)*" OR ARG MATCHES "^(>=|<=|>|<|=|==|\\^|~)" OR ARG MATCHES "\\.\\.\\.")
+      set(VERSION_SPEC "${ARG}")
     else()
       list(APPEND POSITIONALS "${ARG}")
     endif()
@@ -52,7 +62,7 @@ function(_catalog_impl_add_dependency)
     endif()
   endif()
   
-  _catalog_resolve_dependency(${PACKAGE_NAME} "${REQ_TYPE}")
+  _catalog_resolve_dependency("${PACKAGE_NAME}" "${REQ_TYPE}" "${VERSION_SPEC}")
   
   if(NOT TARGET_NAME STREQUAL "")
     if(TARGET ${TARGET_NAME})
@@ -88,6 +98,10 @@ function(_catalog_setup_aliases)
     "add_dependency:_catalog_impl_add_dependency"
     "add_dep:_catalog_impl_add_dependency"
     "import_source:_catalog_impl_import_source"
+    "format_pkgconfig_req:_catalog_format_pkgconfig_req"
+    "is_var_defined:_catalog_is_var_defined"
+    "get_var:_catalog_get_var"
+    "set_var:_catalog_set_var"
   )
 
   set(PREFIXES "catalog_" "cl_")

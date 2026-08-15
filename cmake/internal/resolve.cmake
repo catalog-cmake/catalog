@@ -177,6 +177,31 @@ function(_catalog_resolve_dependency PACKAGE_NAME)
     set(REQ_TYPE "${ARGV1}")
   endif()
 
+  set(VERSION_SPEC "")
+  if(ARGC GREATER 2)
+    set(VERSION_SPEC "${ARGV2}")
+  endif()
+
+  if(VERSION_SPEC STREQUAL "")
+    _catalog_get_var("${PACKAGE_NAME}_VERSION" VERSION_SPEC)
+    if(VERSION_SPEC STREQUAL "")
+      _catalog_get_var("VERSION" VERSION_SPEC)
+    endif()
+  endif()
+
+  if(NOT VERSION_SPEC STREQUAL "")
+    set_property(GLOBAL APPEND PROPERTY "_CATALOG_${PACKAGE_NAME}_VERSION_REQS" "${VERSION_SPEC}")
+  endif()
+
+  _catalog_resolve_version_conflict("${PACKAGE_NAME}" EFFECTIVE_VERSION EFFECTIVE_REQ)
+
+  _catalog_set_var("REQ_VERSION" "${EFFECTIVE_VERSION}")
+  _catalog_set_var("VERSION" "${EFFECTIVE_VERSION}")
+  _catalog_set_var("VERSION_REQ" "${EFFECTIVE_REQ}")
+  _catalog_set_var("${PACKAGE_NAME}_VERSION" "${EFFECTIVE_VERSION}")
+  _catalog_set_var("${PACKAGE_NAME}_REQ_VERSION" "${EFFECTIVE_VERSION}")
+  _catalog_set_var("${PACKAGE_NAME}_VERSION_REQ" "${EFFECTIVE_REQ}")
+
   if(REQ_TYPE STREQUAL "")
     _catalog_get_var("${PACKAGE_NAME}_REQ_TYPE" REQ_TYPE)
     if(REQ_TYPE STREQUAL "")

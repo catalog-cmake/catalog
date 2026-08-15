@@ -7,4 +7,4 @@ cl_repo(${CMAKE_CURRENT_SOURCE_DIR}/recipes)
 
 add_executable(example main.c)
 
-cl_add_dep(example SDL2 PRIVATE STATIC)
+cl_add_dep(example SDL2 VERSION ">=2.28.0" PRIVATE STATIC)
