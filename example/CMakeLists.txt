@@ -3,8 +3,8 @@ project(catalog-example C)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/catalog.cmake)
 
-catalog_repo(${CMAKE_CURRENT_SOURCE_DIR}/recipes)
+cl_repo(${CMAKE_CURRENT_SOURCE_DIR}/recipes)
 
 add_executable(example main.c)
 
-catalog_add_dependency(example SDL2)
+cl_add_dep(example SDL2)
