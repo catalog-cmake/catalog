@@ -36,7 +36,7 @@ function(_recipe_SDL2_package)
 endfunction()
 
 function(_recipe_SDL2_source)
-  _catalog_import_source(
+  catalog_import_source(
     NAME SDL2
     URL https://github.com/libsdl-org/SDL/archive/refs/tags/release-2.30.2.tar.gz
     OPTIONS "SDL_SHARED" "OFF" "SDL_STATIC" "ON" "SDL_TEST"   "OFF"

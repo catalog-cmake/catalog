@@ -22,18 +22,18 @@ function(_catalog_find_target_alias PACKAGE_NAME RESULT_VAR)
   set(${RESULT_VAR} "" PARENT_SCOPE)
 endfunction()
 
-function(_catalog_import_source)
+function(catalog_import_source)
   set(options DOWNLOAD_ONLY NO_EXTRACT)
   set(oneValueArgs NAME VERSION REPO URL REF)
   set(multiValueArgs OPTIONS PATCHES)
   cmake_parse_arguments(IMPORT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if(NOT IMPORT_NAME)
-    _catalog_log(FATAL_ERROR "_catalog_import_source: NAME is required")
+    _catalog_log(FATAL_ERROR "catalog_import_source: NAME is required")
   endif()
 
   if(NOT IMPORT_REPO AND NOT IMPORT_URL)
-    _catalog_log(FATAL_ERROR "_catalog_import_source: REPO or URL is required")
+    _catalog_log(FATAL_ERROR "catalog_import_source: REPO or URL is required")
   endif()
 
   _catalog_get_cache_dir(CACHE_DIR)
