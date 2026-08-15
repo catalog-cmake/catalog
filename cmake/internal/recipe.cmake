@@ -1,14 +1,55 @@
 function(_catalog_find_target_alias PACKAGE_NAME RESULT_VAR)
-  set(CANDIDATES
-    ${PACKAGE_NAME}
-    ${PACKAGE_NAME}::${PACKAGE_NAME}
-    ${PACKAGE_NAME}::${PACKAGE_NAME}-static
-    ${PACKAGE_NAME}::${PACKAGE_NAME}-shared
-    PkgConfig::${PACKAGE_NAME}
-  )
+  _catalog_get_var("REQ_TYPE" REQ_TYPE)
+  if(REQ_TYPE STREQUAL "")
+    _catalog_get_var("${PACKAGE_NAME}_REQ_TYPE" REQ_TYPE)
+  endif()
+
+  if(REQ_TYPE STREQUAL "STATIC" OR REQ_TYPE STREQUAL "PREFER_STATIC")
+    set(CANDIDATES
+      ${PACKAGE_NAME}::${PACKAGE_NAME}-static
+      ${PACKAGE_NAME}::${PACKAGE_NAME}_static
+      ${PACKAGE_NAME}
+      ${PACKAGE_NAME}::${PACKAGE_NAME}
+      PkgConfig::${PACKAGE_NAME}
+      ${PACKAGE_NAME}::${PACKAGE_NAME}-shared
+      ${PACKAGE_NAME}::${PACKAGE_NAME}_shared
+    )
+  elseif(REQ_TYPE STREQUAL "SHARED" OR REQ_TYPE STREQUAL "PREFER_SHARED")
+    set(CANDIDATES
+      ${PACKAGE_NAME}::${PACKAGE_NAME}-shared
+      ${PACKAGE_NAME}::${PACKAGE_NAME}_shared
+      ${PACKAGE_NAME}
+      ${PACKAGE_NAME}::${PACKAGE_NAME}
+      PkgConfig::${PACKAGE_NAME}
+      ${PACKAGE_NAME}::${PACKAGE_NAME}-static
+      ${PACKAGE_NAME}::${PACKAGE_NAME}_static
+    )
+  else()
+    set(CANDIDATES
+      ${PACKAGE_NAME}
+      ${PACKAGE_NAME}::${PACKAGE_NAME}
+      ${PACKAGE_NAME}::${PACKAGE_NAME}-static
+      ${PACKAGE_NAME}::${PACKAGE_NAME}_static
+      ${PACKAGE_NAME}::${PACKAGE_NAME}-shared
+      ${PACKAGE_NAME}::${PACKAGE_NAME}_shared
+      PkgConfig::${PACKAGE_NAME}
+    )
+  endif()
 
   foreach(CANDIDATE ${CANDIDATES})
     if(TARGET ${CANDIDATE})
+      get_target_property(TARGET_TYPE ${CANDIDATE} TYPE)
+      
+      if(REQ_TYPE STREQUAL "STATIC")
+        if(TARGET_TYPE STREQUAL "SHARED_LIBRARY" OR TARGET_TYPE STREQUAL "MODULE_LIBRARY")
+          continue()
+        endif()
+      elseif(REQ_TYPE STREQUAL "SHARED")
+        if(TARGET_TYPE STREQUAL "STATIC_LIBRARY")
+          continue()
+        endif()
+      endif()
+
       get_target_property(IS_ALIAS ${CANDIDATE} ALIASED_TARGET)
       if(IS_ALIAS)
         set(${RESULT_VAR} "${IS_ALIAS}" PARENT_SCOPE)
@@ -187,6 +228,17 @@ function(_catalog_impl_import_source)
 
   set(BUILD_DIR "${CACHE_DIR}/build_${SOURCE_HASH_SHORT}")
   
+  _catalog_get_var("REQ_TYPE" REQ_TYPE)
+  if(REQ_TYPE STREQUAL "")
+    _catalog_get_var("${IMPORT_NAME}_REQ_TYPE" REQ_TYPE)
+  endif()
+
+  if(REQ_TYPE STREQUAL "STATIC" OR REQ_TYPE STREQUAL "PREFER_STATIC")
+    set(BUILD_SHARED_LIBS OFF)
+  elseif(REQ_TYPE STREQUAL "SHARED" OR REQ_TYPE STREQUAL "PREFER_SHARED")
+    set(BUILD_SHARED_LIBS ON)
+  endif()
+
   _catalog_log_verbose(STATUS "Adding ${IMPORT_NAME} from source via add_subdirectory")
   add_subdirectory(${SOURCE_DIR} ${BUILD_DIR})
   
