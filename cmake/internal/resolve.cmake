@@ -182,6 +182,16 @@ function(_catalog_resolve_dependency PACKAGE_NAME)
     set(VERSION_SPEC "${ARGV2}")
   endif()
 
+  set(OPTION_OVERRIDES "")
+  if(ARGC GREATER 3)
+    set(OPTION_OVERRIDES "${ARGV3}")
+  endif()
+
+  if(NOT OPTION_OVERRIDES STREQUAL "")
+    _catalog_set_var("${PACKAGE_NAME}_OPTIONS" "${OPTION_OVERRIDES}")
+    _catalog_set_var("FORCE_source_${PACKAGE_NAME}" TRUE)
+  endif()
+
   if(VERSION_SPEC STREQUAL "")
     _catalog_get_var("${PACKAGE_NAME}_VERSION" VERSION_SPEC)
     if(VERSION_SPEC STREQUAL "")

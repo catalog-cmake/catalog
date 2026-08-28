@@ -108,7 +108,7 @@ function(_catalog_parse_version VER_STR NUM_VAR TAG_WEIGHT_VAR SUB_NUM_VAR)
   elseif(TAG_LOWER STREQUAL "patch" OR TAG_LOWER STREQUAL "pl" OR TAG_LOWER STREQUAL "p" OR TAG_LOWER STREQUAL "post")
     set(WEIGHT 110)
   else()
-    set(WEIGHT 100) # Full release
+    set(WEIGHT 100)
   endif()
 
   if(SUB_NUM STREQUAL "")
@@ -352,7 +352,6 @@ function(_catalog_resolve_version_conflict PACKAGE_NAME OUT_VER_VAR OUT_REQ_VAR)
     endif()
   endforeach()
 
-  # Check if an exact version satisfies all requirements
   if(EXACT_VERSIONS)
     _catalog_sort_versions(EXACT_VERSIONS)
     list(GET EXACT_VERSIONS -1 CANDIDATE_EXACT)
