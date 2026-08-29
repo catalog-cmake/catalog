@@ -1,0 +1,58 @@
+name: Nightly Release
+
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  bundle-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for new commits
+        id: check
+        run: |
+          git fetch --tags --force
+          if git rev-parse --verify --quiet refs/tags/nightly >/dev/null; then
+            prev="$(git rev-parse refs/tags/nightly)"
+            cur="$(git rev-parse HEAD)"
+            if [[ "${prev}" == "${cur}" ]]; then
+              echo "skip=true" >> "${GITHUB_OUTPUT}"
+              exit 0
+            fi
+          fi
+          echo "skip=false" >> "${GITHUB_OUTPUT}"
+
+      - name: Bundle catalog.cmake
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          chmod +x bundle.sh
+          ./bundle.sh dist/catalog.cmake
+          ./bundle.sh --minify dist/catalog.min.cmake
+
+      - name: Replace nightly tag/release
+        if: steps.check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release delete nightly --yes --cleanup-tag || true
+
+      - name: Publish nightly release
+        if: steps.check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create nightly \
+            dist/catalog.cmake \
+            dist/catalog.min.cmake \
+            --title "Nightly ($(git rev-parse --short HEAD))" \
+            --notes "Automated nightly build from ${GITHUB_SHA}." \
+            --prerelease \
+            --target "${GITHUB_SHA}"

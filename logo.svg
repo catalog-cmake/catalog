@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="512"
+   height="512"
+   viewBox="0 0 512 512"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   sodipodi:docname="logo.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#505050"
+     bordercolor="#ffffff"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#505050"
+     inkscape:document-units="px"
+     inkscape:zoom="1.0496822"
+     inkscape:cx="96.69593"
+     inkscape:cy="314.38085"
+     inkscape:window-width="2214"
+     inkscape:window-height="1398"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 256 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="512 : 256 : 1"
+       inkscape:persp3d-origin="256 : 170.66667 : 1"
+       id="perspective1" />
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <!-- Icon from OpenSearch UI by OpenSearch Contributors - https://github.com/opensearch-project/oui/blob/main/LICENSE.txt -->
+    <rect
+       style="fill:#1e1320;fill-opacity:1"
+       id="rect136"
+       width="512"
+       height="512"
+       x="0"
+       y="0" />
+    <circle
+       style="fill:#2c212c;fill-opacity:1;stroke-width:2.40141"
+       id="path136"
+       cy="256"
+       cx="256"
+       r="197.14784" />
+    <path
+       fill="currentColor"
+       d="M 373.888,177.8103 264.17372,122.95314 a 18.285714,18.285714 0 0 0 -16.34744,0 L 138.112,177.8103 A 18.285714,18.285714 0 0 0 128,194.15772 V 317.8423 a 18.285714,18.285714 0 0 0 10.112,16.34742 l 109.71428,54.85714 a 18.285714,18.285714 0 0 0 16.34744,0 L 373.888,334.18972 A 18.285714,18.285714 0 0 0 384,317.8423 V 194.15772 A 18.285714,18.285714 0 0 0 373.888,177.8103 M 217.06972,217.54514 314.77028,168.68572 354.23086,188.416 256,236.672 Z M 256,139.30058 294.32686,158.464 196.44342,207.41486 157.76914,188.416 Z M 146.28572,203.1543 187.42858,223.36 v 50.92572 a 9.1428572,9.1428572 0 0 0 18.2857,0 V 232.3383 l 41.14286,20.2057 V 368.128 L 146.28572,317.8423 Z M 265.14286,368.128 V 252.5623 l 100.57142,-49.408 v 114.688 z"
+       id="path1"
+       style="stroke-width:18.2857;fill:#b2774d;fill-opacity:1" />
+  </g>
+</svg>

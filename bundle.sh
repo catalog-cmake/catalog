@@ -80,13 +80,8 @@ if [[ "${MINIFY}" == "true" ]]; then
     -e 's/^(([^"]*"[^"]*")*[^"]*)[[:space:]]*#.*$/\1/' \
     -e 's/^[[:space:]]+//' \
     -e 's/[[:space:]]+$//' \
-    -e '/^$/d' | \
-  tr '\n' ' ' | \
-  sed -E \
     -e 's/[[:space:]]+/ /g' \
-    -e 's/^[[:space:]]+//' \
-    -e 's/[[:space:]]+$//' >> "${OUTPUT_FILE}"
-  echo "" >> "${OUTPUT_FILE}"
+    -e '/^$/d' >> "${OUTPUT_FILE}"
   echo "Successfully bundled and minified Catalog into ${OUTPUT_FILE}"
 else
   bundle_raw >> "${OUTPUT_FILE}"
