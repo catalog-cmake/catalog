@@ -1,3 +1,4 @@
 # no cmake in root
 *.cmake
 !*/**/*.cmake
+!/cl-bootstrap.cmake
