@@ -1,3 +1,22 @@
+function(_catalog_impl_repo_file REL_PATH RESULT_VAR)
+  if(REL_PATH MATCHES "^https?://" OR REL_PATH MATCHES "^/" OR EXISTS "${REL_PATH}")
+    set(${RESULT_VAR} "${REL_PATH}" PARENT_SCOPE)
+    return()
+  endif()
+
+  _catalog_get_var("REPO_BASE" BASE)
+  if("${BASE}" STREQUAL "")
+    _catalog_log(FATAL_ERROR "cl_repo_file: no repo context available for '${REL_PATH}' - call this from within a recipe stage function")
+  endif()
+
+  if(BASE MATCHES "^https?://")
+    _catalog_load_repo_file("${BASE}/${REL_PATH}" LOCAL_PATH)
+    set(${RESULT_VAR} "${LOCAL_PATH}" PARENT_SCOPE)
+  else()
+    set(${RESULT_VAR} "${BASE}/${REL_PATH}" PARENT_SCOPE)
+  endif()
+endfunction()
+
 function(_catalog_find_target_alias PACKAGE_NAME RESULT_VAR)
   _catalog_get_var("REQ_TYPE" REQ_TYPE)
   if(REQ_TYPE STREQUAL "")

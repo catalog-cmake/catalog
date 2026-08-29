@@ -38,6 +38,7 @@ function(_catalog_load_repo_meta REPO_SOURCE)
       endif()
       
       list(APPEND NEW_RECIPES "${RECIPE_NAME}:${RESOLVED_RECIPE}")
+      set_property(GLOBAL PROPERTY "_CATALOG_REPO_BASE_${RECIPE_NAME}" "${REPO_BASE}")
     endif()
   endforeach()
   
@@ -52,6 +53,10 @@ function(_catalog_add_recipe PACKAGE_NAME RECIPE_SOURCE)
   _catalog_resolve_recipe_url(${RECIPE_SOURCE} RESOLVED_URL)
   list(APPEND _CATALOG_DIRECT_RECIPES "${PACKAGE_NAME}:${RESOLVED_URL}")
   set(_CATALOG_DIRECT_RECIPES "${_CATALOG_DIRECT_RECIPES}" CACHE INTERNAL "Direct recipe paths")
+
+  if(RESOLVED_URL MATCHES "^(.*)/[^/]+$")
+    set_property(GLOBAL PROPERTY "_CATALOG_REPO_BASE_${PACKAGE_NAME}" "${CMAKE_MATCH_1}")
+  endif()
 endfunction()
 
 function(_catalog_find_recipe PACKAGE_NAME RECIPE_PATH_VAR)
@@ -305,6 +310,10 @@ function(_catalog_resolve_dependency PACKAGE_NAME)
 
   _catalog_find_recipe(${PACKAGE_NAME} RECIPE_PATH)
   _catalog_load_recipe(${RECIPE_PATH} RECIPE_FILE)
+
+  get_property(_PKG_REPO_BASE GLOBAL PROPERTY "_CATALOG_REPO_BASE_${PACKAGE_NAME}")
+  _catalog_set_var("REPO_BASE" "${_PKG_REPO_BASE}")
+
   include(${RECIPE_FILE})
   
   set(STAGES toolchain system package prebuilt source)

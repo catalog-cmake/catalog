@@ -737,6 +737,30 @@ function(_catalog_load_recipe RECIPE_URL RECIPE_OUTPUT_VAR)
   set(${RECIPE_OUTPUT_VAR} "${RECIPE_FILE}" PARENT_SCOPE)
 endfunction()
 
+function(_catalog_load_repo_file FILE_URL RESULT_VAR)
+  if(NOT FILE_URL)
+    _catalog_log(FATAL_ERROR "Repo file URL cannot be empty")
+  endif()
+
+  if(EXISTS "${FILE_URL}")
+    set(${RESULT_VAR} "${FILE_URL}" PARENT_SCOPE)
+    return()
+  endif()
+
+  _catalog_get_cache_dir(CACHE_DIR)
+
+  get_filename_component(FILE_EXT "${FILE_URL}" LAST_EXT)
+  string(SHA256 FILE_HASH "${FILE_URL}")
+  string(SUBSTRING "${FILE_HASH}" 0 12 FILE_HASH_SHORT)
+  set(CACHED_FILE "${CACHE_DIR}/repofile_${FILE_HASH_SHORT}${FILE_EXT}")
+
+  if(NOT EXISTS "${CACHED_FILE}")
+    _catalog_download_file("${FILE_URL}" "${CACHED_FILE}")
+  endif()
+
+  set(${RESULT_VAR} "${CACHED_FILE}" PARENT_SCOPE)
+endfunction()
+
 function(_catalog_valid_target_name NAME RESULT_VAR)
   if(NAME MATCHES "^[a-zA-Z0-9_:-]+$")
     set(${RESULT_VAR} TRUE PARENT_SCOPE)
