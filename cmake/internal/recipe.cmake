@@ -176,6 +176,11 @@ function(_catalog_impl_import_source)
     return()
   endif()
 
+  _catalog_get_var("${IMPORT_NAME}_PATCHES" PATCH_OVERRIDES)
+  if(NOT "${PATCH_OVERRIDES}" STREQUAL "")
+    set(IMPORT_PATCHES "${PATCH_OVERRIDES}")
+  endif()
+
   if(SHOULD_PATCH AND IMPORT_PATCHES)
     foreach(PATCH_FILE ${IMPORT_PATCHES})
       if(NOT EXISTS "${PATCH_FILE}")

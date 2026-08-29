@@ -187,8 +187,25 @@ function(_catalog_resolve_dependency PACKAGE_NAME)
     set(OPTION_OVERRIDES "${ARGV3}")
   endif()
 
+  set(PATCH_OVERRIDES "")
+  if(ARGC GREATER 4)
+    set(PATCH_OVERRIDES "${ARGV4}")
+  endif()
+
+  set(FORCE_SOURCE FALSE)
+  if(ARGC GREATER 5)
+    set(FORCE_SOURCE "${ARGV5}")
+  endif()
+
   if(NOT OPTION_OVERRIDES STREQUAL "")
     _catalog_set_var("${PACKAGE_NAME}_OPTIONS" "${OPTION_OVERRIDES}")
+  endif()
+
+  if(NOT PATCH_OVERRIDES STREQUAL "")
+    _catalog_set_var("${PACKAGE_NAME}_PATCHES" "${PATCH_OVERRIDES}")
+  endif()
+
+  if(FORCE_SOURCE)
     _catalog_set_var("FORCE_source_${PACKAGE_NAME}" TRUE)
   endif()
 
