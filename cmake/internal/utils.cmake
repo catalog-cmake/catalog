@@ -718,22 +718,31 @@ function(_catalog_load_recipe RECIPE_URL RECIPE_OUTPUT_VAR)
   if(NOT RECIPE_URL)
     _catalog_log(FATAL_ERROR "Recipe URL cannot be empty")
   endif()
-  
+
   if(EXISTS "${RECIPE_URL}")
     set(${RECIPE_OUTPUT_VAR} "${RECIPE_URL}" PARENT_SCOPE)
     return()
   endif()
-  
+
   _catalog_get_cache_dir(CACHE_DIR)
-  
+
   string(SHA256 RECIPE_HASH "${RECIPE_URL}")
   string(SUBSTRING "${RECIPE_HASH}" 0 12 RECIPE_HASH_SHORT)
   set(RECIPE_FILE "${CACHE_DIR}/recipe_${RECIPE_HASH_SHORT}.cmake")
-  
+
+  set(FORCE_REFRESH FALSE)
+  if(ARGC GREATER 2)
+    set(FORCE_REFRESH "${ARGV2}")
+  endif()
+
+  if(FORCE_REFRESH AND EXISTS ${RECIPE_FILE})
+    file(REMOVE ${RECIPE_FILE})
+  endif()
+
   if(NOT EXISTS ${RECIPE_FILE})
     _catalog_download_file(${RECIPE_URL} ${RECIPE_FILE})
   endif()
-  
+
   set(${RECIPE_OUTPUT_VAR} "${RECIPE_FILE}" PARENT_SCOPE)
 endfunction()
 

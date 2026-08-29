@@ -97,25 +97,32 @@ function(_catalog_impl_import_source)
   endif()
 
   _catalog_get_cache_dir(CACHE_DIR)
-  
+
   set(SHOULD_PATCH FALSE)
-  
+
+  _catalog_is_var_defined("REFRESH_${IMPORT_NAME}" SHOULD_REFRESH)
+
   if(IMPORT_REPO)
     if(NOT IMPORT_REF)
       set(IMPORT_REF "HEAD")
     endif()
-    
+
     string(SHA256 SOURCE_HASH "${IMPORT_REPO}@${IMPORT_REF}")
     string(SUBSTRING "${SOURCE_HASH}" 0 12 SOURCE_HASH_SHORT)
     set(CHECKOUT_DIR "${CACHE_DIR}/src_${SOURCE_HASH_SHORT}")
-    
+
     set(SOURCE_DIR "${CHECKOUT_DIR}")
-    
+
     set(SKIP_CLONE FALSE)
     if(IMPORT_DOWNLOAD_ONLY AND IMPORT_NO_EXTRACT)
       set(SKIP_CLONE TRUE)
     endif()
-    
+
+    if(SHOULD_REFRESH AND EXISTS ${CHECKOUT_DIR})
+      _catalog_log(STATUS "Refreshing cached checkout for ${IMPORT_NAME}...")
+      file(REMOVE_RECURSE ${CHECKOUT_DIR})
+    endif()
+
     if(NOT SKIP_CLONE)
       if(NOT EXISTS ${CHECKOUT_DIR}/.git)
         _catalog_log(STATUS "Cloning ${IMPORT_REPO}...")
@@ -149,12 +156,22 @@ function(_catalog_impl_import_source)
     string(SHA256 URL_HASH "${IMPORT_URL}")
     string(SUBSTRING "${URL_HASH}" 0 12 URL_HASH_SHORT)
     set(ARCHIVE "${CACHE_DIR}/archive_${URL_HASH_SHORT}")
-    
+    set(EXTRACT_DIR "${CACHE_DIR}/src_${URL_HASH_SHORT}")
+
+    if(SHOULD_REFRESH)
+      _catalog_log(STATUS "Refreshing cached download for ${IMPORT_NAME}...")
+      if(EXISTS ${ARCHIVE})
+        file(REMOVE ${ARCHIVE})
+      endif()
+      if(EXISTS ${EXTRACT_DIR})
+        file(REMOVE_RECURSE ${EXTRACT_DIR})
+      endif()
+    endif()
+
     if(NOT EXISTS ${ARCHIVE})
       _catalog_download_file(${IMPORT_URL} ${ARCHIVE})
     endif()
-    
-    set(EXTRACT_DIR "${CACHE_DIR}/src_${URL_HASH_SHORT}")
+
     set(SOURCE_DIR "${EXTRACT_DIR}")
     
     set(SKIP_EXTRACT FALSE)
@@ -277,7 +294,11 @@ function(_catalog_impl_import_source)
   endif()
 
   set(BUILD_DIR "${CACHE_DIR}/build_${SOURCE_HASH_SHORT}")
-  
+
+  if(SHOULD_REFRESH AND EXISTS ${BUILD_DIR})
+    file(REMOVE_RECURSE ${BUILD_DIR})
+  endif()
+
   _catalog_get_var("REQ_TYPE" REQ_TYPE)
   if(REQ_TYPE STREQUAL "")
     _catalog_get_var("${IMPORT_NAME}_REQ_TYPE" REQ_TYPE)

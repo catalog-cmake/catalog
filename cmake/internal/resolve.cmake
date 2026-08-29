@@ -308,8 +308,10 @@ function(_catalog_resolve_dependency PACKAGE_NAME)
   _catalog_set_var("${PACKAGE_NAME}_REQUIRE_STATIC" "${CATALOG_REQUIRE_STATIC}")
   _catalog_set_var("${PACKAGE_NAME}_REQUIRE_SHARED" "${CATALOG_REQUIRE_SHARED}")
 
+  _catalog_is_var_defined("REFRESH_${PACKAGE_NAME}" SHOULD_REFRESH_RECIPE)
+
   _catalog_find_recipe(${PACKAGE_NAME} RECIPE_PATH)
-  _catalog_load_recipe(${RECIPE_PATH} RECIPE_FILE)
+  _catalog_load_recipe(${RECIPE_PATH} RECIPE_FILE ${SHOULD_REFRESH_RECIPE})
 
   get_property(_PKG_REPO_BASE GLOBAL PROPERTY "_CATALOG_REPO_BASE_${PACKAGE_NAME}")
   _catalog_set_var("REPO_BASE" "${_PKG_REPO_BASE}")
