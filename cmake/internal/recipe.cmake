@@ -216,10 +216,6 @@ function(_catalog_impl_import_source)
     set(SOURCE_HASH_SHORT "${URL_HASH_SHORT}")
   endif()
 
-  if(IMPORT_DOWNLOAD_ONLY)
-    return()
-  endif()
-
   _catalog_get_var("${IMPORT_NAME}_PATCHES" PATCH_OVERRIDES)
   if(NOT "${PATCH_OVERRIDES}" STREQUAL "")
     set(IMPORT_PATCHES "${PATCH_OVERRIDES}")
@@ -246,6 +242,10 @@ function(_catalog_impl_import_source)
 
   if(SHOULD_PATCH)
     file(WRITE "${READY_STAMP}" "")
+  endif()
+
+  if(IMPORT_DOWNLOAD_ONLY)
+    return()
   endif()
 
   list(LENGTH IMPORT_OPTIONS OPTIONS_LEN)
