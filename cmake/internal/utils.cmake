@@ -427,13 +427,66 @@ endmacro()
 function(_catalog_download_file URL PATH)
   _catalog_log_verbose(STATUS "Downloading ${URL}")
   set(TMP_PATH "${PATH}.tmp")
-  file(DOWNLOAD ${URL} ${TMP_PATH} SHOW_PROGRESS TIMEOUT 300 INACTIVITY_TIMEOUT 20 STATUS DL_STATUS)
-  list(GET DL_STATUS 0 RES)
-  if(NOT RES EQUAL 0)
-    list(GET DL_STATUS 1 ERR_MSG)
-    file(REMOVE ${TMP_PATH})
-    _catalog_log(FATAL_ERROR "Download failed: ${ERR_MSG}")
+
+  _catalog_get_var("DOWNLOAD_PROVIDER" DOWNLOAD_PROVIDER ENV)
+  if(NOT "${DOWNLOAD_PROVIDER}" STREQUAL "")
+    string(TOLOWER "${DOWNLOAD_PROVIDER}" DOWNLOAD_PROVIDER)
+    if(NOT DOWNLOAD_PROVIDER MATCHES "^(curl|wget|cmake)$")
+      _catalog_log(FATAL_ERROR "Invalid DOWNLOAD_PROVIDER '${DOWNLOAD_PROVIDER}' (expected curl, wget, or cmake)")
+    endif()
   endif()
+
+  if(NOT DOWNLOAD_PROVIDER STREQUAL "cmake")
+    find_program(_CATALOG_CURL_EXECUTABLE curl)
+    find_program(_CATALOG_WGET_EXECUTABLE wget)
+  endif()
+
+  set(DL_DONE FALSE)
+  if(NOT DOWNLOAD_PROVIDER STREQUAL "wget" AND NOT DOWNLOAD_PROVIDER STREQUAL "cmake" AND _CATALOG_CURL_EXECUTABLE)
+    execute_process(
+      COMMAND "${_CATALOG_CURL_EXECUTABLE}" --fail --location --progress-bar
+              --connect-timeout 20 --max-time 300 --speed-time 20 --speed-limit 1
+              -o "${TMP_PATH}" "${URL}"
+      RESULT_VARIABLE DL_RES
+    )
+    if(DL_RES EQUAL 0)
+      set(DL_DONE TRUE)
+    else()
+      file(REMOVE "${TMP_PATH}")
+      if(DOWNLOAD_PROVIDER STREQUAL "curl")
+        _catalog_log(FATAL_ERROR "Download failed via curl: ${URL}")
+      endif()
+    endif()
+  elseif(NOT DOWNLOAD_PROVIDER STREQUAL "curl" AND NOT DOWNLOAD_PROVIDER STREQUAL "cmake" AND _CATALOG_WGET_EXECUTABLE)
+    execute_process(
+      COMMAND "${_CATALOG_WGET_EXECUTABLE}" --progress=bar:force:noscroll
+              --tries=1 --timeout=20 -O "${TMP_PATH}" "${URL}"
+      RESULT_VARIABLE DL_RES
+    )
+    if(DL_RES EQUAL 0)
+      set(DL_DONE TRUE)
+    else()
+      file(REMOVE "${TMP_PATH}")
+      if(DOWNLOAD_PROVIDER STREQUAL "wget")
+        _catalog_log(FATAL_ERROR "Download failed via wget: ${URL}")
+      endif()
+    endif()
+  elseif(DOWNLOAD_PROVIDER STREQUAL "curl")
+    _catalog_log(FATAL_ERROR "DOWNLOAD_PROVIDER is 'curl' but the curl executable was not found")
+  elseif(DOWNLOAD_PROVIDER STREQUAL "wget")
+    _catalog_log(FATAL_ERROR "DOWNLOAD_PROVIDER is 'wget' but the wget executable was not found")
+  endif()
+
+  if(NOT DL_DONE)
+    file(DOWNLOAD ${URL} ${TMP_PATH} SHOW_PROGRESS TIMEOUT 300 INACTIVITY_TIMEOUT 20 STATUS DL_STATUS)
+    list(GET DL_STATUS 0 RES)
+    if(NOT RES EQUAL 0)
+      list(GET DL_STATUS 1 ERR_MSG)
+      file(REMOVE ${TMP_PATH})
+      _catalog_log(FATAL_ERROR "Download failed: ${ERR_MSG}")
+    endif()
+  endif()
+
   file(RENAME ${TMP_PATH} ${PATH})
 endfunction()
 
