@@ -322,10 +322,6 @@ function(_catalog_impl_import_source)
     set(BUILD_SHARED_LIBS ON)
   endif()
 
-  if(NOT DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-  endif()
-
   _catalog_log_verbose(STATUS "Adding ${IMPORT_NAME} from source via add_subdirectory")
   add_subdirectory(${SOURCE_DIR} ${BUILD_DIR})
   
