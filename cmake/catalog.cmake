@@ -76,7 +76,13 @@ function(_catalog_impl_add_dependency)
     list(GET POSITIONALS 0 TARGET_NAME)
     list(GET POSITIONALS 1 PACKAGE_NAME)
   endif()
-  
+
+  _catalog_resolve_dep_shorthand("${PACKAGE_NAME}" SHORTHAND_NAME SHORTHAND_RECIPE_SPEC IS_SHORTHAND)
+  if(IS_SHORTHAND)
+    _catalog_add_recipe(${SHORTHAND_NAME} ${SHORTHAND_RECIPE_SPEC})
+    set(PACKAGE_NAME "${SHORTHAND_NAME}")
+  endif()
+
   _catalog_valid_target_name("${PACKAGE_NAME}" VALID_PKG)
   if(NOT VALID_PKG)
     _catalog_log(FATAL_ERROR "Invalid package name: ${PACKAGE_NAME}")

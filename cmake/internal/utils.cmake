@@ -682,6 +682,97 @@ function(_catalog_resolve_recipe_url SOURCE_STR RESULT_VAR)
   set(${RESULT_VAR} "${RESOLVED}" PARENT_SCOPE)
 endfunction()
 
+function(_catalog_clone_recipe_repo GIT_URL REF RESULT_DIR_VAR)
+  _catalog_get_cache_dir(CACHE_DIR)
+
+  string(SHA256 CLONE_HASH "${GIT_URL}@${REF}")
+  string(SUBSTRING "${CLONE_HASH}" 0 12 CLONE_HASH_SHORT)
+  set(CHECKOUT_DIR "${CACHE_DIR}/recipe_src_${CLONE_HASH_SHORT}")
+
+  if(NOT EXISTS "${CHECKOUT_DIR}/.git")
+    file(REMOVE_RECURSE "${CHECKOUT_DIR}")
+    _catalog_log(STATUS "Cloning ${GIT_URL} for recipe...")
+    execute_process(
+      COMMAND git clone --quiet ${GIT_URL} ${CHECKOUT_DIR}
+      RESULT_VARIABLE GIT_RESULT
+      ERROR_VARIABLE GIT_ERROR
+    )
+    if(NOT GIT_RESULT EQUAL 0)
+      _catalog_log(FATAL_ERROR "Failed to clone repository ${GIT_URL}: ${GIT_ERROR}")
+    endif()
+
+    if(NOT REF STREQUAL "" AND NOT REF STREQUAL "HEAD")
+      execute_process(
+        COMMAND git checkout --quiet ${REF}
+        WORKING_DIRECTORY ${CHECKOUT_DIR}
+        RESULT_VARIABLE CHECKOUT_RESULT
+        ERROR_VARIABLE CHECKOUT_ERROR
+      )
+      if(NOT CHECKOUT_RESULT EQUAL 0)
+        _catalog_log(FATAL_ERROR "Failed to checkout ref ${REF} in ${GIT_URL}: ${CHECKOUT_ERROR}")
+      endif()
+    endif()
+  endif()
+
+  set(${RESULT_DIR_VAR} "${CHECKOUT_DIR}" PARENT_SCOPE)
+endfunction()
+
+function(_catalog_resolve_dep_shorthand SOURCE_STR PACKAGE_NAME_VAR RECIPE_SPEC_VAR IS_SHORTHAND_VAR)
+  set(${IS_SHORTHAND_VAR} FALSE PARENT_SCOPE)
+
+  if(SOURCE_STR MATCHES "^gh:(.+)$")
+    set(RECIPE_SPEC "${CMAKE_MATCH_1}")
+
+    if(NOT RECIPE_SPEC MATCHES "^[^/]+/([^/@#]+)")
+      _catalog_log(FATAL_ERROR "Invalid gh: dependency shorthand '${SOURCE_STR}' (expected gh:<owner>/<repo>[@ref])")
+    endif()
+
+    set(REPO_NAME "${CMAKE_MATCH_1}")
+    string(REGEX REPLACE "\\.git$" "" REPO_NAME "${REPO_NAME}")
+
+    _catalog_valid_target_name("${REPO_NAME}" VALID_NAME)
+    if(NOT VALID_NAME)
+      _catalog_log(FATAL_ERROR "Repository name '${REPO_NAME}' inferred from '${SOURCE_STR}' is not a valid package name; register it with catalog_add_recipe(<name> ${RECIPE_SPEC}) instead")
+    endif()
+
+    set(${PACKAGE_NAME_VAR} "${REPO_NAME}" PARENT_SCOPE)
+    set(${RECIPE_SPEC_VAR} "${RECIPE_SPEC}" PARENT_SCOPE)
+    set(${IS_SHORTHAND_VAR} TRUE PARENT_SCOPE)
+    return()
+  endif()
+
+  if(SOURCE_STR MATCHES "^(https?)://([^/]+)/([^/]+)/([^/@]+)(@(.+))?/?$")
+    set(SCHEME "${CMAKE_MATCH_1}")
+    set(HOST "${CMAKE_MATCH_2}")
+    set(GH_USER "${CMAKE_MATCH_3}")
+    set(REPO_RAW "${CMAKE_MATCH_4}")
+    set(REF "${CMAKE_MATCH_6}")
+    if(REF STREQUAL "")
+      set(REF "HEAD")
+    endif()
+    string(REGEX REPLACE "\\.git$" "" REPO_NAME "${REPO_RAW}")
+    set(GIT_URL "${SCHEME}://${HOST}/${GH_USER}/${REPO_NAME}.git")
+  elseif(SOURCE_STR MATCHES "^git@([^:]+):([^/]+)/([^/]+)$")
+    set(REPO_RAW "${CMAKE_MATCH_3}")
+    string(REGEX REPLACE "\\.git$" "" REPO_NAME "${REPO_RAW}")
+    set(REF "HEAD")
+    set(GIT_URL "${SOURCE_STR}")
+  else()
+    return()
+  endif()
+
+  _catalog_valid_target_name("${REPO_NAME}" VALID_NAME)
+  if(NOT VALID_NAME)
+    _catalog_log(FATAL_ERROR "Repository name '${REPO_NAME}' inferred from '${SOURCE_STR}' is not a valid package name; register it with catalog_add_recipe() instead")
+  endif()
+
+  _catalog_clone_recipe_repo("${GIT_URL}" "${REF}" CHECKOUT_DIR)
+
+  set(${PACKAGE_NAME_VAR} "${REPO_NAME}" PARENT_SCOPE)
+  set(${RECIPE_SPEC_VAR} "${CHECKOUT_DIR}/recipe.cmake" PARENT_SCOPE)
+  set(${IS_SHORTHAND_VAR} TRUE PARENT_SCOPE)
+endfunction()
+
 function(_catalog_resolve_repo_url SOURCE_STR RESULT_VAR TYPE_VAR BASE_VAR NAME_VAR)
   set(IS_LOCAL FALSE)
   if(EXISTS "${SOURCE_STR}" AND IS_DIRECTORY "${SOURCE_STR}")
