@@ -915,7 +915,7 @@ function(_catalog_load_repo_file FILE_URL RESULT_VAR)
 endfunction()
 
 function(_catalog_valid_target_name NAME RESULT_VAR)
-  if(NAME MATCHES "^[a-zA-Z0-9_:-]+$")
+  if(NAME MATCHES "^[a-zA-Z0-9_.+:-]+$")
     set(${RESULT_VAR} TRUE PARENT_SCOPE)
   else()
     set(${RESULT_VAR} FALSE PARENT_SCOPE)
