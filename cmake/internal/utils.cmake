@@ -854,6 +854,7 @@ function(_catalog_get_cache_dir RESULT_VAR)
     endif()
   endif()
   
+  file(TO_CMAKE_PATH "${CACHE_DIR}" CACHE_DIR)
   file(MAKE_DIRECTORY "${CACHE_DIR}")
   set(${RESULT_VAR} "${CACHE_DIR}" PARENT_SCOPE)
 endfunction()
