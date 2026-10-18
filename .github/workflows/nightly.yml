@@ -17,20 +17,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check for new commits
-        id: check
-        run: |
-          git fetch --tags --force
-          if git rev-parse --verify --quiet refs/tags/nightly >/dev/null; then
-            prev="$(git rev-parse refs/tags/nightly)"
-            cur="$(git rev-parse HEAD)"
-            if [[ "${prev}" == "${cur}" ]]; then
-              echo "skip=true" >> "${GITHUB_OUTPUT}"
-              exit 0
-            fi
-          fi
-          echo "skip=false" >> "${GITHUB_OUTPUT}"
-
       - name: Bundle catalog.cmake
         if: steps.check.outputs.skip != 'true'
         run: |
