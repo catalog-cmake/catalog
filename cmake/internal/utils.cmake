@@ -628,6 +628,9 @@ block(PROPAGATE CATALOG_PACKAGE_MANAGER CATALOG_PACKAGE_REPO)
   endif()
 endblock()
 
+_catalog_set_var("PACKAGE_MANAGER" "${CATALOG_PACKAGE_MANAGER}")
+_catalog_set_var("PACKAGE_REPO" "${CATALOG_PACKAGE_REPO}")
+
 function(_catalog_resolve_recipe_url SOURCE_STR RESULT_VAR)
   set(IS_LOCAL FALSE)
   if(EXISTS "${SOURCE_STR}" AND NOT IS_DIRECTORY "${SOURCE_STR}")
