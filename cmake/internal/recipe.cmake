@@ -82,6 +82,74 @@ function(_catalog_find_target_alias PACKAGE_NAME RESULT_VAR)
   set(${RESULT_VAR} "" PARENT_SCOPE)
 endfunction()
 
+function(_catalog_install_source NAME SOURCE_DIR BUILD_DIR INSTALL_PREFIX REQ_TYPE CONFIGURE_ARGS)
+  _catalog_get_var("BUILD_TYPE" BUILD_TYPE_VAL)
+  if("${BUILD_TYPE_VAL}" STREQUAL "")
+    set(BUILD_TYPE_VAL "Release")
+  endif()
+
+  set(CFG "-DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}" "-DCMAKE_BUILD_TYPE=${BUILD_TYPE_VAL}")
+
+  if(REQ_TYPE STREQUAL "STATIC" OR REQ_TYPE STREQUAL "PREFER_STATIC")
+    list(APPEND CFG "-DBUILD_SHARED_LIBS=OFF")
+  elseif(REQ_TYPE STREQUAL "SHARED" OR REQ_TYPE STREQUAL "PREFER_SHARED")
+    list(APPEND CFG "-DBUILD_SHARED_LIBS=ON")
+  endif()
+
+  _catalog_get_var("INSTALL_CMAKE_ARGS" EXTRA_CMAKE_ARGS)
+  list(APPEND CFG ${EXTRA_CMAKE_ARGS})
+
+  set(GEN_ARGS -G "${CMAKE_GENERATOR}")
+  if(CMAKE_GENERATOR_PLATFORM)
+    list(APPEND GEN_ARGS -A "${CMAKE_GENERATOR_PLATFORM}")
+  endif()
+  if(CMAKE_GENERATOR_TOOLSET)
+    list(APPEND GEN_ARGS -T "${CMAKE_GENERATOR_TOOLSET}")
+  endif()
+
+  _catalog_log(STATUS "Configuring ${NAME} (install mode, prefix ${INSTALL_PREFIX})")
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" -S "${SOURCE_DIR}" -B "${BUILD_DIR}" ${GEN_ARGS} ${CFG} ${CONFIGURE_ARGS}
+    RESULT_VARIABLE RES
+  )
+  if(NOT RES EQUAL 0)
+    _catalog_log(FATAL_ERROR "Failed to configure ${NAME} for installation")
+  endif()
+
+  _catalog_log(STATUS "Building ${NAME}")
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" --build "${BUILD_DIR}" --config "${BUILD_TYPE_VAL}" --parallel
+    RESULT_VARIABLE RES
+  )
+  if(NOT RES EQUAL 0)
+    _catalog_log(FATAL_ERROR "Failed to build ${NAME}")
+  endif()
+
+  _catalog_log(STATUS "Installing ${NAME} into ${INSTALL_PREFIX}")
+  _catalog_get_var("INSTALL_DESTDIR" DESTDIR_VAL)
+  set(ENV_WRAPPER "")
+  if(NOT "${DESTDIR_VAL}" STREQUAL "")
+    set(ENV_WRAPPER "${CMAKE_COMMAND}" -E env "DESTDIR=${DESTDIR_VAL}")
+  endif()
+  execute_process(
+    COMMAND ${ENV_WRAPPER} "${CMAKE_COMMAND}" --install "${BUILD_DIR}" --config "${BUILD_TYPE_VAL}"
+    RESULT_VARIABLE RES
+  )
+  if(NOT RES EQUAL 0)
+    _catalog_log(FATAL_ERROR "Failed to install ${NAME}")
+  endif()
+
+  _catalog_get_var("INSTALL_LOG" INSTALL_LOG_VAL)
+  if(NOT "${INSTALL_LOG_VAL}" STREQUAL "" AND EXISTS "${BUILD_DIR}/install_manifest.txt")
+    file(READ "${BUILD_DIR}/install_manifest.txt" INSTALLED_FILES)
+    file(APPEND "${INSTALL_LOG_VAL}" "${INSTALLED_FILES}\n")
+  endif()
+
+  if(NOT TARGET ${NAME})
+    add_library(${NAME} INTERFACE IMPORTED GLOBAL)
+  endif()
+endfunction()
+
 function(_catalog_impl_import_source)
   set(options DOWNLOAD_ONLY NO_EXTRACT)
   set(oneValueArgs NAME VERSION REPO URL REF)
@@ -248,6 +316,7 @@ function(_catalog_impl_import_source)
     return()
   endif()
 
+  set(SOURCE_CONFIGURE_ARGS "")
   list(LENGTH IMPORT_OPTIONS OPTIONS_LEN)
   set(INDEX 0)
   while(INDEX LESS OPTIONS_LEN)
@@ -271,6 +340,8 @@ function(_catalog_impl_import_source)
     if(OPTION_NAME)
       set(${OPTION_NAME} "${OPTION_VALUE}")
       set(${OPTION_NAME} "${OPTION_VALUE}" PARENT_SCOPE)
+      string(REPLACE ";" "\\;" _OPTION_VALUE_ESC "${OPTION_VALUE}")
+      list(APPEND SOURCE_CONFIGURE_ARGS "-D${OPTION_NAME}=${_OPTION_VALUE_ESC}")
     endif()
   endwhile()
 
@@ -298,6 +369,8 @@ function(_catalog_impl_import_source)
     if(OPTION_NAME)
       set(${OPTION_NAME} "${OPTION_VALUE}")
       set(${OPTION_NAME} "${OPTION_VALUE}" PARENT_SCOPE)
+      string(REPLACE ";" "\\;" _OPTION_VALUE_ESC "${OPTION_VALUE}")
+      list(APPEND SOURCE_CONFIGURE_ARGS "-D${OPTION_NAME}=${_OPTION_VALUE_ESC}")
     endif()
   endwhile()
 
@@ -320,6 +393,12 @@ function(_catalog_impl_import_source)
     set(BUILD_SHARED_LIBS OFF)
   elseif(REQ_TYPE STREQUAL "SHARED" OR REQ_TYPE STREQUAL "PREFER_SHARED")
     set(BUILD_SHARED_LIBS ON)
+  endif()
+
+  _catalog_get_var("INSTALL_PREFIX" INSTALL_PREFIX_VAL)
+  if(NOT "${INSTALL_PREFIX_VAL}" STREQUAL "")
+    _catalog_install_source("${IMPORT_NAME}" "${SOURCE_DIR}" "${BUILD_DIR}-install" "${INSTALL_PREFIX_VAL}" "${REQ_TYPE}" "${SOURCE_CONFIGURE_ARGS}")
+    return()
   endif()
 
   _catalog_log_verbose(STATUS "Adding ${IMPORT_NAME} from source via add_subdirectory")

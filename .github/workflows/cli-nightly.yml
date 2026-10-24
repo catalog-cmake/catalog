@@ -1,0 +1,47 @@
+name: CLI Nightly
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cli/**"
+      - "cmake/**"
+      - "bundle.sh"
+      - "bundle-cli.sh"
+      - "install.sh"
+      - ".github/workflows/cli-nightly.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bundle the CLI
+        run: |
+          ./bundle-cli.sh dist/catalog
+          (cd dist && sha256sum catalog > catalog.sha256)
+
+      - name: Replace cli-nightly tag/release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release delete cli-nightly --yes --cleanup-tag || true
+
+      - name: Publish cli-nightly release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create cli-nightly \
+            dist/catalog \
+            dist/catalog.sha256 \
+            --title "CLI Nightly ($(git rev-parse --short HEAD))" \
+            --notes "Automated nightly build of the Catalog CLI from ${GITHUB_SHA}. Install with install.sh." \
+            --prerelease \
+            --target "${GITHUB_SHA}"

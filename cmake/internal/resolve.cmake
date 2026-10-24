@@ -143,34 +143,23 @@ function(_catalog_prompt_install PACKAGE_NAME)
   _catalog_log(STATUS "Install ${PACKAGE_NAME} using ${CATALOG_PACKAGE_MANAGER}? [y/n]")
   
   execute_process(
-    COMMAND sh -c "read -t 30 -n 1 -p '' REPLY; echo \$REPLY; echo"
+    COMMAND sh -c "read REPLY; printf '%s' \"\$REPLY\""
     OUTPUT_VARIABLE USER_INPUT
     OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
     TIMEOUT 30
   )
   
-  if(USER_INPUT MATCHES "^[yY]$")
+  if(USER_INPUT MATCHES "^[yY]([eE][sS])?$")
     _catalog_log(STATUS "Installing ${PACKAGE_NAME}...")
     
-    if(CATALOG_PACKAGE_MANAGER STREQUAL "apt")
-      execute_process(COMMAND sudo apt-get install -y ${CATALOG_PACKAGE_NAME})
-    elseif(CATALOG_PACKAGE_MANAGER STREQUAL "pacman")
-      execute_process(COMMAND sudo pacman -S --noconfirm ${CATALOG_PACKAGE_NAME})
-    elseif(CATALOG_PACKAGE_MANAGER STREQUAL "brew")
-      execute_process(COMMAND brew install ${CATALOG_PACKAGE_NAME})
-    elseif(CATALOG_PACKAGE_MANAGER STREQUAL "yum")
-      execute_process(COMMAND sudo yum install -y ${CATALOG_PACKAGE_NAME})
-    elseif(CATALOG_PACKAGE_MANAGER STREQUAL "apk")
-      execute_process(COMMAND sudo apk add ${CATALOG_PACKAGE_NAME})
-    elseif(CATALOG_PACKAGE_MANAGER STREQUAL "zypper")
-      execute_process(COMMAND sudo zypper install -y ${CATALOG_PACKAGE_NAME})
-    elseif(CATALOG_PACKAGE_MANAGER STREQUAL "emerge")
-      execute_process(COMMAND sudo emerge ${CATALOG_PACKAGE_NAME})
-    else()
+    _catalog_package_install_command("${CATALOG_PACKAGE_MANAGER}" "${CATALOG_PACKAGE_NAME}" INSTALL_CMD)
+    if("${INSTALL_CMD}" STREQUAL "")
       _catalog_log_verbose("Unknown package manager detected, trying remaining stages...")
       set(_CATALOG_FAILED_PACKAGE_STAGE TRUE PARENT_SCOPE)
       return()
     endif()
+    execute_process(COMMAND sh -c "${INSTALL_CMD}")
     
     _catalog_log_verbose("Installation command executed.")
   else()

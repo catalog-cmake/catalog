@@ -3,6 +3,10 @@ name: Nightly Release
 on:
   push:
     branches: [main]
+    paths:
+      - "cmake/**"
+      - "bundle.sh"
+      - ".github/workflows/nightly.yml"
   workflow_dispatch: {}
 
 permissions:

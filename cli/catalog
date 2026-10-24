@@ -1,0 +1,20 @@
+#!/bin/sh
+
+self=$0
+while [ -h "$self" ]; do
+  dir=$(cd "$(dirname "$self")" && pwd -P)
+  target=$(readlink "$self")
+  case $target in
+    /*) self=$target ;;
+    *)  self=$dir/$target ;;
+  esac
+done
+dir=$(cd "$(dirname "$self")" && pwd -P)
+
+cmake=${CMAKE:-cmake}
+if ! command -v "$cmake" >/dev/null 2>&1; then
+  echo "catalog: error: cmake not found (need CMake 3.25 or newer; set CMAKE=... to point to one)" >&2
+  exit 127
+fi
+
+exec "$cmake" -P "$dir/catalog.cmake" -- "$@"
