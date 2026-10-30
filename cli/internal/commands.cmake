@@ -436,7 +436,9 @@ function(_cl_install_one NAME SPEC SOURCE OUT)
   endif()
   if("${S_files}" STREQUAL "")
     _cl_remove_stage("${STAGE_DIR}")
-    _cl_warn("${NAME}: the build succeeded but installed no files; the project may not define install rules")
+    _cl_warn("${NAME}: the build succeeded but installed no files. The project may not define install rules, "
+             "the recipe may switch them off (see INSTALL_OPTIONS), or its _recipe_${NAME}_install function "
+             "may not use install_files(), which is what records files for the manifest.")
     return()
   endif()
 
