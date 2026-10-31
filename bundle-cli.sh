@@ -96,6 +96,7 @@ if ! command -v "$cmake" >/dev/null 2>&1; then
   echo "catalog: error: cmake not found (need CMake 3.25 or newer; set CMAKE=... to point to one)" >&2
   exit 127
 fi
+if [ -t 1 ]; then CATALOG_STDOUT_TTY=1; export CATALOG_STDOUT_TTY; fi
 exec "$cmake" -P "$0" -- "$@"
 ]]
 # ==============================================================================

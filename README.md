@@ -78,11 +78,12 @@ catalog install gh:owner/repo             # recipe.cmake at the root of a GitHub
 catalog install https://example.com/owner/repo@v1.2
 catalog install foo --repo owner/recipes  # extra recipe repository
 catalog check zlib                        # read-only
+catalog search sdl                        # by name or description (-i for fzf)
 catalog list
 catalog remove fmt
 catalog outdated                          # installed vs. what the recipes install now
 catalog update [pkg...]                   # reinstall what is outdated
-eval "$(catalog env)"                     # CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, ...
+eval "$(catalog env)"                     # PATH, CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, ...
 ```
 
 `install` tries, in order: the toolchain, the system (the recipe's `system`

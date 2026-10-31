@@ -130,11 +130,14 @@ function(_catalog_has_install_hook NAME RESULT_VAR)
   endif()
 endfunction()
 
-function(_catalog_append_install_log FILES)
+function(_catalog_append_install_log NAME FILES)
   _catalog_get_var("INSTALL_LOG" INSTALL_LOG_VAL)
   if(NOT "${INSTALL_LOG_VAL}" STREQUAL "" AND NOT "${FILES}" STREQUAL "")
-    string(REPLACE ";" "\n" TEXT "${FILES}")
-    file(APPEND "${INSTALL_LOG_VAL}" "${TEXT}\n")
+    set(TEXT "")
+    foreach(FILE ${FILES})
+      string(APPEND TEXT "${NAME}|${FILE}\n")
+    endforeach()
+    file(APPEND "${INSTALL_LOG_VAL}" "${TEXT}")
   endif()
 endfunction()
 
@@ -158,7 +161,7 @@ function(_catalog_run_install_hook NAME SOURCE_DIR BUILD_DIR PREFIX BUILD_TYPE)
   set_property(GLOBAL PROPERTY _CATALOG_INSTALL_ROOT "")
   set_property(GLOBAL PROPERTY _CATALOG_INSTALLED_FILES "")
 
-  _catalog_append_install_log("${INSTALLED_FILES}")
+  _catalog_append_install_log("${NAME}" "${INSTALLED_FILES}")
 endfunction()
 
 function(_catalog_impl_set_version VERSION)
@@ -302,8 +305,9 @@ function(_catalog_install_source NAME SOURCE_DIR BUILD_DIR INSTALL_PREFIX REQ_TY
 
   _catalog_get_var("INSTALL_LOG" INSTALL_LOG_VAL)
   if(NOT "${INSTALL_LOG_VAL}" STREQUAL "" AND EXISTS "${BUILD_DIR}/install_manifest.txt")
-    file(READ "${BUILD_DIR}/install_manifest.txt" INSTALLED_FILES)
-    file(APPEND "${INSTALL_LOG_VAL}" "${INSTALLED_FILES}\n")
+    file(STRINGS "${BUILD_DIR}/install_manifest.txt" INSTALLED_FILES)
+    list(FILTER INSTALLED_FILES EXCLUDE REGEX "^$")
+    _catalog_append_install_log("${NAME}" "${INSTALLED_FILES}")
   endif()
 
   if(NOT TARGET ${NAME})

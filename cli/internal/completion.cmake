@@ -16,7 +16,7 @@ _catalog() {
     w=${COMP_WORDS[i]}
     if [ "$skip" = 1 ]; then skip=0; continue; fi
     case $w in
-      --toolchain|--target|--prefix|--repo|--recipe|--build-type|--define|-D) skip=1 ;;
+      --toolchain|--target|--prefix|--repo|--recipe|--build-type|--define|--shell|-D) skip=1 ;;
       -*) ;;
       *) cmd=$w; break ;;
     esac
@@ -27,12 +27,14 @@ _catalog() {
       COMPREPLY=($(compgen -f -- "$cur")); return ;;
     --build-type)
       COMPREPLY=($(compgen -W "Release Debug RelWithDebInfo MinSizeRel" -- "$cur")); return ;;
+    --shell)
+      COMPREPLY=($(compgen -W "sh bash zsh fish powershell cmd" -- "$cur")); return ;;
     --target|--define|-D)
       return ;;
   esac
 
   if [[ $cur == -* ]]; then
-    COMPREPLY=($(compgen -W "--toolchain --target --prefix --define --repo --recipe --no-default-repo --refresh --static --shared --lib --exe --app --no-prebuilt --source --build-type --force --dry-run --yes --all --interactive --json --verbose --help --version" -- "$cur"))
+    COMPREPLY=($(compgen -W "--toolchain --target --prefix --define --repo --recipe --no-default-repo --refresh --static --shared --lib --exe --app --no-prebuilt --source --build-type --force --dry-run --yes --all --interactive --long --names --json --shell --verbose --help --version" -- "$cur"))
     return
   fi
 
@@ -44,7 +46,7 @@ _catalog() {
     remove|uninstall|rm|outdated|update|upgrade)
       mapfile -t COMPREPLY < <(catalog list 2>/dev/null | awk 'NR > 1 { print $1 }' | _catalog_prefix "$cur") ;;
     completion)
-      COMPREPLY=($(compgen -W "bash zsh fish" -- "$cur")) ;;
+      COMPREPLY=($(compgen -W "bash zsh fish powershell" -- "$cur")) ;;
   esac
 }
 complete -F _catalog catalog
@@ -98,6 +100,9 @@ _catalog() {
     '(-n --dry-run)'{-n,--dry-run}'[show what would happen]' \
     '--all[clean: all targets]' \
     '(-i --interactive)'{-i,--interactive}'[search: pick with fzf]' \
+    '--long[search: table with kind, version and description]' \
+    '--names[search: only the names]' \
+    '--shell=[env: shell to print for]:shell:(sh bash zsh fish powershell cmd)' \
     '--json[list: print the manifest as JSON]' \
     '(-V --verbose)'{-V,--verbose}'[more verbose logging]' \
     '(-h --help)'{-h,--help}'[show help]' \
@@ -117,7 +122,7 @@ _catalog() {
           pkgs=(${(f)"$(catalog list 2>/dev/null | awk 'NR > 1 { print $1 }')"})
           compadd -M 'm:{a-zA-Z}={A-Za-z}' -a pkgs ;;
         completion)
-          compadd bash zsh fish ;;
+          compadd bash zsh fish powershell ;;
       esac ;;
   esac
 }
@@ -155,7 +160,7 @@ complete -c catalog -n "not __fish_seen_subcommand_from $__catalog_cmds" -a vers
 
 complete -c catalog -n '__fish_seen_subcommand_from install add check' -a '(catalog search (commandline -ct) 2>/dev/null)'
 complete -c catalog -n '__fish_seen_subcommand_from remove uninstall rm outdated update upgrade' -a '(catalog list 2>/dev/null | string match -rv "^NAME" | string replace -r "\s.*" "")'
-complete -c catalog -n '__fish_seen_subcommand_from completion' -a 'bash zsh fish'
+complete -c catalog -n '__fish_seen_subcommand_from completion' -a 'bash zsh fish powershell'
 
 complete -c catalog -l toolchain -r -F -d 'CMake toolchain file of the target'
 complete -c catalog -l target -x -d 'Name of the target'
@@ -178,21 +183,76 @@ complete -c catalog -s y -l yes -d 'Skip all prompts'
 complete -c catalog -s n -l dry-run -d 'Show what would happen'
 complete -c catalog -l all -d 'clean: all targets'
 complete -c catalog -s i -l interactive -d 'search: pick with fzf'
+complete -c catalog -l long -d 'search: table with kind, version and description'
+complete -c catalog -l names -d 'search: only the names'
+complete -c catalog -l shell -x -a 'sh bash zsh fish powershell cmd' -d 'env: shell to print for'
 complete -c catalog -l json -d 'list: print the manifest as JSON'
 complete -c catalog -s V -l verbose -d 'More verbose logging'
 complete -c catalog -s h -l help -d 'Show help'
 complete -c catalog -l version -d 'Show version'
 ]==])
 
+set(_CL_COMPLETION_POWERSHELL [==[
+Register-ArgumentCompleter -Native -CommandName catalog -ScriptBlock {
+  param($wordToComplete, $commandAst, $cursorPosition)
+
+  $commands = 'install', 'add', 'remove', 'uninstall', 'rm', 'list', 'ls', 'search', 'check', 'outdated', 'update', 'upgrade', 'clean', 'env', 'prefix', 'completion', 'help', 'version'
+  $options = '--toolchain', '--target', '--prefix', '--define', '--repo', '--recipe', '--no-default-repo', '--refresh', '--static', '--shared', '--lib', '--exe', '--app', '--no-prebuilt', '--source', '--build-type', '--force', '--dry-run', '--yes', '--all', '--interactive', '--long', '--names', '--json', '--shell', '--verbose', '--help', '--version'
+  $valueOptions = '--toolchain', '--target', '--prefix', '--repo', '--recipe', '--build-type', '--define', '--shell', '-D'
+
+  function Complete($items) {
+    $items | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
+      [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+    }
+  }
+
+  $words = @($commandAst.CommandElements | Select-Object -Skip 1 | ForEach-Object { $_.ToString() })
+  if ($words.Count -gt 0 -and $wordToComplete -ne '' -and $words[-1] -eq $wordToComplete) {
+    if ($words.Count -eq 1) { $words = @() } else { $words = $words[0..($words.Count - 2)] }
+  }
+  $previous = if ($words.Count -gt 0) { $words[-1] } else { '' }
+
+  $command = $null
+  $skip = $false
+  foreach ($word in $words) {
+    if ($skip) { $skip = $false; continue }
+    if ($valueOptions -contains $word) { $skip = $true; continue }
+    if ($word.StartsWith('-')) { continue }
+    $command = $word
+    break
+  }
+
+  if ($previous -eq '--build-type') { return Complete @('Release', 'Debug', 'RelWithDebInfo', 'MinSizeRel') }
+  if ($previous -eq '--shell') { return Complete @('sh', 'bash', 'zsh', 'fish', 'powershell', 'cmd') }
+  if ($valueOptions -contains $previous) { return }
+
+  if ($wordToComplete.StartsWith('-')) { return Complete $options }
+  if (-not $command) { return Complete $commands }
+
+  switch ($command) {
+    { $_ -in 'install', 'add', 'check' } {
+      Complete @(& catalog search $wordToComplete --names 2>$null)
+    }
+    { $_ -in 'remove', 'uninstall', 'rm', 'outdated', 'update', 'upgrade' } {
+      Complete @(& catalog list 2>$null | Select-Object -Skip 1 | ForEach-Object { ($_ -split '\s+')[0] })
+    }
+    'completion' { Complete @('bash', 'zsh', 'fish', 'powershell') }
+  }
+}
+]==])
+
 function(_cl_cmd_completion)
   list(LENGTH CL_PKGS N)
   if(N EQUAL 0)
-    _cl_die("completion: give a shell (bash, zsh or fish)")
+    _cl_die("completion: give a shell (bash, zsh, fish or powershell)")
   endif()
   list(GET CL_PKGS 0 SHELL)
+  if(SHELL STREQUAL "pwsh")
+    set(SHELL powershell)
+  endif()
   string(TOUPPER "${SHELL}" UPPER)
-  if(NOT SHELL MATCHES "^(bash|zsh|fish)$")
-    _cl_die("completion: unsupported shell '${SHELL}' (bash, zsh or fish)")
+  if(NOT SHELL MATCHES "^(bash|zsh|fish|powershell)$")
+    _cl_die("completion: unsupported shell '${SHELL}' (bash, zsh, fish or powershell)")
   endif()
   _cl_say("${_CL_COMPLETION_${UPPER}}")
 endfunction()

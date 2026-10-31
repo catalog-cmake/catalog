@@ -17,4 +17,6 @@ if ! command -v "$cmake" >/dev/null 2>&1; then
   exit 127
 fi
 
+if [ -t 1 ]; then CATALOG_STDOUT_TTY=1; export CATALOG_STDOUT_TTY; fi
+
 exec "$cmake" -P "$dir/catalog.cmake" -- "$@"
