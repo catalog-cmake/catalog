@@ -19,6 +19,7 @@ include("${CL_CORE_FILE}")
 include(${CMAKE_CURRENT_LIST_DIR}/internal/util.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/internal/manifest.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/internal/probe.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/internal/completion.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/internal/commands.cmake)
 
 if(NOT CL_AS_LIBRARY)

@@ -11,6 +11,7 @@ COMMANDS
   search [term]...             List recipes whose name contains a term (all recipes without one)
   check <package>...           Report package availability without changing anything
   clean                        Delete cached downloads, checkouts and build trees
+  completion <shell>           Print a completion script (bash, zsh or fish)
   env                          Print shell exports (CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, ...)
   prefix                       Print the install prefix of the target
   help, version                Show help or version info
@@ -35,6 +36,10 @@ INSTALL OPTIONS
   -f, --force          Redo packages that are already in the manifest
   -y, --yes            Skips all prompts (as if they answer was \"yes\")
   -n, --dry-run        install/remove: show what would happen without changing anything
+
+COMPLETION
+  bash: source <(catalog completion bash)       fish: catalog completion fish | source
+  zsh:  source <(catalog completion zsh)        (or save it as _catalog on your \$fpath)
 
 SEARCH OPTIONS
   -i, --interactive  Pick recipes with fzf
@@ -816,6 +821,11 @@ function(_cl_main)
     if(CL_CMD STREQUAL "" AND NOT CL_OPT_HELP)
       _cl_exit(1)
     endif()
+    return()
+  endif()
+
+  if(CL_CMD STREQUAL "completion")
+    _cl_cmd_completion()
     return()
   endif()
 
