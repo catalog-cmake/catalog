@@ -1,3 +1,35 @@
+function(_cl_manifest_key NAME KIND OUT)
+  if(KIND STREQUAL "exe")
+    set(${OUT} "${NAME}#exe" PARENT_SCOPE)
+  else()
+    set(${OUT} "${NAME}" PARENT_SCOPE)
+  endif()
+endfunction()
+
+function(_cl_key_split KEY NAME_OUT KIND_OUT)
+  if(KEY MATCHES "^(.*)#exe$")
+    set(${NAME_OUT} "${CMAKE_MATCH_1}" PARENT_SCOPE)
+    set(${KIND_OUT} "exe" PARENT_SCOPE)
+  else()
+    set(${NAME_OUT} "${KEY}" PARENT_SCOPE)
+    set(${KIND_OUT} "lib" PARENT_SCOPE)
+  endif()
+endfunction()
+
+function(_cl_label NAME KIND OUT)
+  if(KIND STREQUAL "exe")
+    set(${OUT} "${NAME} (exe)" PARENT_SCOPE)
+  else()
+    set(${OUT} "${NAME}" PARENT_SCOPE)
+  endif()
+endfunction()
+
+function(_cl_key_label KEY OUT)
+  _cl_key_split("${KEY}" N K)
+  _cl_label("${N}" "${K}" L)
+  set(${OUT} "${L}" PARENT_SCOPE)
+endfunction()
+
 function(_cl_manifest_file OUT)
   set(${OUT} "${CL_PREFIX}/share/catalog/manifest.json" PARENT_SCOPE)
 endfunction()
@@ -96,13 +128,17 @@ function(_cl_manifest_names OUT)
 endfunction()
 
 function(_cl_manifest_put NAME)
-  cmake_parse_arguments(P "" "MANAGED_BY;STAGE;REQUESTED;TYPE;PACKAGE_MANAGER;PACKAGE_NAME;FILES;SOURCE" "" ${ARGN})
+  cmake_parse_arguments(P "" "MANAGED_BY;STAGE;REQUESTED;TYPE;PACKAGE_MANAGER;PACKAGE_NAME;FILES;SOURCE;KIND" "" ${ARGN})
   get_property(JSON GLOBAL PROPERTY _CL_MANIFEST)
 
   _cl_now(NOW)
+  set(KIND_NAME "library")
+  if(P_KIND STREQUAL "application")
+    set(KIND_NAME "application")
+  endif()
   set(ENTRY "{}")
   foreach(PAIR
-      "kind:library" "managed_by:${P_MANAGED_BY}" "stage:${P_STAGE}" "requested:${P_REQUESTED}"
+      "kind:${KIND_NAME}" "managed_by:${P_MANAGED_BY}" "stage:${P_STAGE}" "requested:${P_REQUESTED}"
       "type:${P_TYPE}" "package_manager:${P_PACKAGE_MANAGER}" "package_name:${P_PACKAGE_NAME}"
       "files:${P_FILES}" "source:${P_SOURCE}" "installed_at:${NOW}")
     string(FIND "${PAIR}" ":" POS)

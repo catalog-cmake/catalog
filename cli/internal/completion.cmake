@@ -32,7 +32,7 @@ _catalog() {
   esac
 
   if [[ $cur == -* ]]; then
-    COMPREPLY=($(compgen -W "--toolchain --target --prefix --define --repo --recipe --no-default-repo --refresh --static --shared --source --build-type --force --dry-run --yes --all --interactive --json --verbose --help --version" -- "$cur"))
+    COMPREPLY=($(compgen -W "--toolchain --target --prefix --define --repo --recipe --no-default-repo --refresh --static --shared --lib --exe --app --no-prebuilt --source --build-type --force --dry-run --yes --all --interactive --json --verbose --help --version" -- "$cur"))
     return
   fi
 
@@ -84,6 +84,10 @@ _catalog() {
     '--refresh[re-download cached recipes and sources]' \
     '(--shared)--static[require a static build]' \
     '(--static)--shared[require a shared build]' \
+    '--lib[the library of a package]' \
+    '(--app)--exe[the application of a package]' \
+    '(--exe)--app[the application of a package]' \
+    '--no-prebuilt[do not use prebuilt binaries]' \
     '--source[forcefully build from source]' \
     '--build-type=[build type for source builds]:type:(Release Debug RelWithDebInfo MinSizeRel)' \
     '(-f --force)'{-f,--force}'[redo packages already in the manifest]' \
@@ -157,6 +161,10 @@ complete -c catalog -l no-default-repo -d 'Do not load the official repo'
 complete -c catalog -l refresh -d 'Re-download cached recipes and sources'
 complete -c catalog -l static -d 'Require a static build'
 complete -c catalog -l shared -d 'Require a shared build'
+complete -c catalog -l lib -d 'The library of a package'
+complete -c catalog -l exe -d 'The application of a package'
+complete -c catalog -l app -d 'The application of a package'
+complete -c catalog -l no-prebuilt -d 'Do not use prebuilt binaries'
 complete -c catalog -l source -d 'Forcefully build from source'
 complete -c catalog -l build-type -x -a 'Release Debug RelWithDebInfo MinSizeRel' -d 'Build type for source builds'
 complete -c catalog -s f -l force -d 'Redo packages already in the manifest'
