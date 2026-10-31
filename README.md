@@ -87,8 +87,8 @@ eval "$(catalog env)"                     # CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, 
 
 `install` tries, in order: the toolchain, the system (the recipe's `system`
 stage), your package manager (it asks first, or pass `--yes`; never in a cross
-build), then a source build that is installed into the prefix. The prebuilt
-stage is not used by the CLI yet (as of writing).
+build), a prebuilt binary, then a source build that is installed into the
+prefix.
 
 A recipe is CMake code that runs on your machine. When one does not come from
 the official repo (a `--repo`, a `--recipe`, `gh:owner/repo` or a URL),
