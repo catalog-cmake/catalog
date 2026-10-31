@@ -95,6 +95,8 @@ function(_catalog_impl_add_dependency)
     endif()
   endif()
   
+  _catalog_canonical_package_name("${PACKAGE_NAME}" PACKAGE_NAME)
+
   _catalog_resolve_dependency("${PACKAGE_NAME}" "${REQ_TYPE}" "${VERSION_SPEC}" "${OPTION_OVERRIDES}" "${PATCH_OVERRIDES}" "${FORCE_SOURCE}")
   
   if(NOT TARGET_NAME STREQUAL "")
