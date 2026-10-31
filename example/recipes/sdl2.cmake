@@ -30,6 +30,10 @@ function(_recipe_SDL2_system)
       endif()
     endif()
   endif()
+
+  if(SDL2_VERSION)
+    cl_set_version("${SDL2_VERSION}")
+  endif()
 endfunction()
 
 function(_recipe_SDL2_package)
@@ -65,14 +69,24 @@ function(_recipe_SDL2_source)
     set(SDL_BUILD_STATIC "OFF")
   endif()
 
-  set(SDL_TAG "release-2.32.10")
+  set(SDL_VERSION "2.32.10")
   if(CL_REQ_VERSION)
-    set(SDL_TAG "release-${CL_REQ_VERSION}")
+    set(SDL_VERSION "${CL_REQ_VERSION}")
   endif()
+  set(SDL_TAG "release-${SDL_VERSION}")
+  cl_set_version("${SDL_VERSION}")
 
   cl_import_source(
     NAME SDL2
     URL https://github.com/libsdl-org/SDL/archive/refs/tags/${SDL_TAG}.tar.gz
     OPTIONS "SDL_SHARED" "${SDL_BUILD_SHARED}" "SDL_STATIC" "${SDL_BUILD_STATIC}" "SDL_TEST" "OFF"
   )
+endfunction()
+
+function(_recipe_SDL2_latest)
+  set(SDL_VERSION "2.32.10")
+  if(CL_REQ_VERSION)
+    set(SDL_VERSION "${CL_REQ_VERSION}")
+  endif()
+  cl_set_version("${SDL_VERSION}")
 endfunction()

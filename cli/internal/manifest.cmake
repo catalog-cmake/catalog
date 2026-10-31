@@ -128,10 +128,13 @@ function(_cl_manifest_names OUT)
 endfunction()
 
 function(_cl_manifest_put NAME)
-  cmake_parse_arguments(P "" "MANAGED_BY;STAGE;REQUESTED;TYPE;PACKAGE_MANAGER;PACKAGE_NAME;FILES;SOURCE;KIND" "" ${ARGN})
+  cmake_parse_arguments(P "" "MANAGED_BY;STAGE;REQUESTED;TYPE;PACKAGE_MANAGER;PACKAGE_NAME;FILES;SOURCE;KIND;VERSION" "" ${ARGN})
   get_property(JSON GLOBAL PROPERTY _CL_MANIFEST)
 
   _cl_now(NOW)
+  if("${P_VERSION}" STREQUAL "")
+    set(P_VERSION "unknown")
+  endif()
   set(KIND_NAME "library")
   if(P_KIND STREQUAL "application")
     set(KIND_NAME "application")
@@ -140,7 +143,7 @@ function(_cl_manifest_put NAME)
   foreach(PAIR
       "kind:${KIND_NAME}" "managed_by:${P_MANAGED_BY}" "stage:${P_STAGE}" "requested:${P_REQUESTED}"
       "type:${P_TYPE}" "package_manager:${P_PACKAGE_MANAGER}" "package_name:${P_PACKAGE_NAME}"
-      "files:${P_FILES}" "source:${P_SOURCE}" "installed_at:${NOW}")
+      "version:${P_VERSION}" "files:${P_FILES}" "source:${P_SOURCE}" "installed_at:${NOW}")
     string(FIND "${PAIR}" ":" POS)
     string(SUBSTRING "${PAIR}" 0 ${POS} K)
     math(EXPR POS "${POS} + 1")

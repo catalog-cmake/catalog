@@ -38,10 +38,10 @@ _catalog() {
 
   case $cmd in
     "")
-      COMPREPLY=($(compgen -W "install add remove uninstall rm list ls search check clean env prefix completion help version" -- "$cur")) ;;
+      COMPREPLY=($(compgen -W "install add remove uninstall rm list ls search check outdated update upgrade clean env prefix completion help version" -- "$cur")) ;;
     install|add|check)
       mapfile -t COMPREPLY < <(catalog search "$cur" 2>/dev/null | _catalog_prefix "$cur") ;;
-    remove|uninstall|rm)
+    remove|uninstall|rm|outdated|update|upgrade)
       mapfile -t COMPREPLY < <(catalog list 2>/dev/null | awk 'NR > 1 { print $1 }' | _catalog_prefix "$cur") ;;
     completion)
       COMPREPLY=($(compgen -W "bash zsh fish" -- "$cur")) ;;
@@ -65,6 +65,9 @@ _catalog() {
     'ls:show recorded packages for the target'
     'search:find recipes by name'
     'check:report package availability'
+    'outdated:compare installed versions with the latest'
+    'update:update packages installed by Catalog'
+    'upgrade:update packages installed by Catalog'
     'clean:delete cached downloads and build trees'
     'env:print shell exports'
     'prefix:print the install prefix'
@@ -110,7 +113,7 @@ _catalog() {
         install|add|check)
           pkgs=(${(f)"$(catalog search ${PREFIX} 2>/dev/null)"})
           compadd -M 'm:{a-zA-Z}={A-Za-z}' -a pkgs ;;
-        remove|uninstall|rm)
+        remove|uninstall|rm|outdated|update|upgrade)
           pkgs=(${(f)"$(catalog list 2>/dev/null | awk 'NR > 1 { print $1 }')"})
           compadd -M 'm:{a-zA-Z}={A-Za-z}' -a pkgs ;;
         completion)
@@ -129,7 +132,7 @@ fi
 set(_CL_COMPLETION_FISH [==[
 complete -c catalog -f
 
-set -l __catalog_cmds install add remove uninstall rm list ls search check clean env prefix completion help version
+set -l __catalog_cmds install add remove uninstall rm list ls search check outdated update upgrade clean env prefix completion help version
 
 complete -c catalog -n "not __fish_seen_subcommand_from $__catalog_cmds" -a install -d 'Make libraries available'
 complete -c catalog -n "not __fish_seen_subcommand_from $__catalog_cmds" -a add -d 'Make libraries available'
@@ -140,6 +143,9 @@ complete -c catalog -n "not __fish_seen_subcommand_from $__catalog_cmds" -a list
 complete -c catalog -n "not __fish_seen_subcommand_from $__catalog_cmds" -a ls -d 'Show recorded packages for the target'
 complete -c catalog -n "not __fish_seen_subcommand_from $__catalog_cmds" -a search -d 'Find recipes by name'
 complete -c catalog -n "not __fish_seen_subcommand_from $__catalog_cmds" -a check -d 'Report package availability'
+complete -c catalog -n "not __fish_seen_subcommand_from $__catalog_cmds" -a outdated -d 'Compare installed versions with the latest'
+complete -c catalog -n "not __fish_seen_subcommand_from $__catalog_cmds" -a update -d 'Update packages installed by Catalog'
+complete -c catalog -n "not __fish_seen_subcommand_from $__catalog_cmds" -a upgrade -d 'Update packages installed by Catalog'
 complete -c catalog -n "not __fish_seen_subcommand_from $__catalog_cmds" -a clean -d 'Delete cached downloads and build trees'
 complete -c catalog -n "not __fish_seen_subcommand_from $__catalog_cmds" -a env -d 'Print shell exports'
 complete -c catalog -n "not __fish_seen_subcommand_from $__catalog_cmds" -a prefix -d 'Print the install prefix'
@@ -148,7 +154,7 @@ complete -c catalog -n "not __fish_seen_subcommand_from $__catalog_cmds" -a help
 complete -c catalog -n "not __fish_seen_subcommand_from $__catalog_cmds" -a version -d 'Show version'
 
 complete -c catalog -n '__fish_seen_subcommand_from install add check' -a '(catalog search (commandline -ct) 2>/dev/null)'
-complete -c catalog -n '__fish_seen_subcommand_from remove uninstall rm' -a '(catalog list 2>/dev/null | string match -rv "^NAME" | string replace -r "\s.*" "")'
+complete -c catalog -n '__fish_seen_subcommand_from remove uninstall rm outdated update upgrade' -a '(catalog list 2>/dev/null | string match -rv "^NAME" | string replace -r "\s.*" "")'
 complete -c catalog -n '__fish_seen_subcommand_from completion' -a 'bash zsh fish'
 
 complete -c catalog -l toolchain -r -F -d 'CMake toolchain file of the target'

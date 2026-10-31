@@ -80,6 +80,8 @@ catalog install foo --repo owner/recipes  # extra recipe repository
 catalog check zlib                        # read-only
 catalog list
 catalog remove fmt
+catalog outdated                          # installed vs. what the recipes install now
+catalog update [pkg...]                   # reinstall what is outdated
 eval "$(catalog env)"                     # CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, ...
 ```
 

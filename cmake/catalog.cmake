@@ -146,6 +146,7 @@ function(_catalog_setup_aliases)
     "add_dep:_catalog_impl_add_dependency"
     "import_source:_catalog_impl_import_source"
     "install_files:_catalog_impl_install_files"
+    "set_version:_catalog_impl_set_version"
     "repo_file:_catalog_impl_repo_file"
     "format_pkgconfig_req:_catalog_format_pkgconfig_req"
     "is_var_defined:_catalog_is_var_defined"
