@@ -9,6 +9,7 @@ COMMANDS
   remove <package>...          Remove packages installed by Catalog
   list                         Show recorded packages for the target
   check <package>...           Report package availability without changing anything
+  clean                        Delete cached downloads, checkouts and build trees
   env                          Print shell exports (CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, ...)
   prefix                       Print the install prefix of the target
   help, version                Show help or version info
@@ -33,6 +34,10 @@ INSTALL OPTIONS
   -f, --force          Redo packages that are already in the manifest
   -y, --yes            Skips all prompts (as if they answer was \"yes\")
   -n, --dry-run        install/remove: show what would happen without changing anything
+
+CLEAN OPTIONS
+  --all              Clean the caches of all targets, not just the current one
+  -n, --dry-run      Also applies to clean: list what would be deleted
 
 OTHER
   --json             list: print the manifest as JSON
@@ -679,6 +684,36 @@ function(_cl_cmd_check)
   endif()
 endfunction()
 
+function(_cl_cmd_clean)
+  if(CL_OPT_ALL)
+    file(GLOB DIRS LIST_DIRECTORIES true "${CL_HOME}/cache/*")
+  else()
+    set(DIRS "${CL_CACHE}")
+  endif()
+
+  set(COUNT 0)
+  foreach(D ${DIRS})
+    if(NOT IS_DIRECTORY "${D}")
+      continue()
+    endif()
+    file(GLOB ENTRIES LIST_DIRECTORIES true "${D}/*" "${D}/.[!.]*")
+    list(LENGTH ENTRIES N)
+    math(EXPR COUNT "${COUNT} + ${N}")
+    _cl_verbose("${D}: ${N} entries")
+    if(NOT CL_OPT_DRY_RUN)
+      foreach(E ${ENTRIES})
+        file(REMOVE_RECURSE "${E}")
+      endforeach()
+    endif()
+  endforeach()
+
+  if(CL_OPT_DRY_RUN)
+    _cl_info("[dry-run] would delete ${COUNT} cache entries")
+  else()
+    _cl_info("deleted ${COUNT} cache entries")
+  endif()
+endfunction()
+
 function(_cl_cmd_env)
   _cl_pkgconfig_dirs(DIRS)
   if(CMAKE_HOST_WIN32)
@@ -735,6 +770,8 @@ function(_cl_main)
     set(RUN _cl_cmd_list)
   elseif(CL_CMD STREQUAL "check")
     set(RUN _cl_cmd_check)
+  elseif(CL_CMD STREQUAL "clean")
+    set(RUN _cl_cmd_clean)
   elseif(CL_CMD STREQUAL "env")
     set(RUN _cl_cmd_env)
   elseif(CL_CMD STREQUAL "prefix")
