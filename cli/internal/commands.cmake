@@ -8,6 +8,7 @@ COMMANDS
   install <package>...         Make libraries available (via system, host package manager, or source)
   remove <package>...          Remove packages installed by Catalog
   list                         Show recorded packages for the target
+  search [term]...             List recipes whose name contains a term (all recipes without one)
   check <package>...           Report package availability without changing anything
   clean                        Delete cached downloads, checkouts and build trees
   env                          Print shell exports (CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, ...)
@@ -34,6 +35,9 @@ INSTALL OPTIONS
   -f, --force          Redo packages that are already in the manifest
   -y, --yes            Skips all prompts (as if they answer was \"yes\")
   -n, --dry-run        install/remove: show what would happen without changing anything
+
+SEARCH OPTIONS
+  -i, --interactive  Pick recipes with fzf
 
 CLEAN OPTIONS
   --all              Clean the caches of all targets, not just the current one
@@ -684,6 +688,65 @@ function(_cl_cmd_check)
   endif()
 endfunction()
 
+function(_cl_cmd_search)
+  if(CL_OPT_INTERACTIVE)
+    find_program(_CL_FZF fzf)
+    if(NOT _CL_FZF)
+      _cl_die("--interactive needs fzf, which was not found in PATH")
+    endif()
+  endif()
+
+  _cl_probe(list "all" L)
+  if(NOT L_state STREQUAL "listed")
+    _cl_probe_problem("recipes" L)
+    _cl_die("could not list recipes (no recipe repository loaded? see --repo)")
+  endif()
+
+  set(NAMES ${L_recipes})
+  list(SORT NAMES CASE INSENSITIVE)
+
+  if(CL_OPT_INTERACTIVE)
+    string(RANDOM LENGTH 6 ALPHABET "0123456789abcdef" RND)
+    set(INPUT "${CL_WORK}/search-${RND}.txt")
+    string(REPLACE ";" "\n" LINES "${NAMES}")
+    file(WRITE "${INPUT}" "${LINES}\n")
+    string(REPLACE ";" " " QUERY "${CL_PKGS}")
+    execute_process(COMMAND "${_CL_FZF}" --multi --prompt "recipe> " --query "${QUERY}"
+                    INPUT_FILE "${INPUT}" OUTPUT_VARIABLE PICKED RESULT_VARIABLE RC)
+    file(REMOVE "${INPUT}")
+    if(NOT RC EQUAL 0)
+      _cl_exit(1)
+    endif()
+    string(STRIP "${PICKED}" PICKED)
+    _cl_say("${PICKED}")
+    return()
+  endif()
+
+  set(MATCHES "")
+  foreach(N ${NAMES})
+    if(NOT CL_PKGS)
+      list(APPEND MATCHES "${N}")
+      continue()
+    endif()
+    foreach(TERM ${CL_PKGS})
+      string(TOLOWER "${N}" N_LOWER)
+      string(TOLOWER "${TERM}" T_LOWER)
+      string(FIND "${N_LOWER}" "${T_LOWER}" POS)
+      if(NOT POS EQUAL -1)
+        list(APPEND MATCHES "${N}")
+        break()
+      endif()
+    endforeach()
+  endforeach()
+
+  if(NOT MATCHES)
+    _cl_info("no recipes match")
+    _cl_exit(1)
+  endif()
+  string(REPLACE ";" "\n" TEXT "${MATCHES}")
+  _cl_say("${TEXT}")
+endfunction()
+
 function(_cl_cmd_clean)
   if(CL_OPT_ALL)
     file(GLOB DIRS LIST_DIRECTORIES true "${CL_HOME}/cache/*")
@@ -770,6 +833,8 @@ function(_cl_main)
     set(RUN _cl_cmd_list)
   elseif(CL_CMD STREQUAL "check")
     set(RUN _cl_cmd_check)
+  elseif(CL_CMD STREQUAL "search")
+    set(RUN _cl_cmd_search)
   elseif(CL_CMD STREQUAL "clean")
     set(RUN _cl_cmd_clean)
   elseif(CL_CMD STREQUAL "env")
