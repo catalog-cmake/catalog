@@ -55,6 +55,48 @@ builds, Catalog may not be the best pick (but it is fully capable of doing so).
   force system-level resolution on a per-dependency basis using standard CMake
   variables or global environment variables.
 
+## Command line interface
+
+`catalog` can be used to install recipes system-wide from the command line.
+
+**Install it**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/catalog-cmake/catalog/main/install.sh | sh
+```
+
+**Build it yourself**: `./bundle-cli.sh [--version STRING] [dist/catalog]`
+bundles `cli/catalog.cmake`, its modules, and the (minified) library into one
+file. From a checkout you can also run `./cli/catalog` directly.
+
+**Use it**
+
+```sh
+catalog install SDL2                      # system -> package manager -> source
+catalog install 'fmt@>=10' --static
+catalog install gh:owner/repo             # recipe.cmake at the root of a GitHub repo
+catalog install https://example.com/owner/repo@v1.2
+catalog install foo --repo owner/recipes  # extra recipe repository
+catalog check zlib                        # read-only
+catalog search sdl                        # by name or description (-i for fzf)
+catalog list
+catalog remove fmt
+catalog outdated                          # installed vs. what the recipes install now
+catalog update [pkg...]                   # reinstall what is outdated
+eval "$(catalog env)"                     # PATH, CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, ...
+```
+
+`install` tries, in order: the toolchain, the system (the recipe's `system`
+stage), your package manager (it asks first, or pass `--yes`; never in a cross
+build), a prebuilt binary, then a source build that is installed into the
+prefix.
+
+A recipe is CMake code that runs on your machine. When one does not come from
+the official repo (a `--repo`, a `--recipe`, `gh:owner/repo` or a URL),
+`install` and `check` print it and ask before running it. The question defaults
+to yes and is not asked in CI or any session without a terminal. `--yes` skips
+the listing and just says where the recipe came from.
+
 ## Documentation & Usage
 
 For installation, usage, and recipe authoring instructions please visit our docs

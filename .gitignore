@@ -2,3 +2,6 @@
 *.cmake
 !*/**/*.cmake
 !/cl-bootstrap.cmake
+
+# bundler output
+/dist/

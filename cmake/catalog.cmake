@@ -19,7 +19,11 @@ function(_catalog_impl_add_recipe PACKAGE_NAME RECIPE_SOURCE)
   if(NOT VALID_PKG)
     _catalog_log(FATAL_ERROR "Invalid package name: ${PACKAGE_NAME}")
   endif()
-  _catalog_add_recipe(${PACKAGE_NAME} ${RECIPE_SOURCE})
+  set(RECIPE_KIND "")
+  if(ARGC GREATER 2)
+    set(RECIPE_KIND "${ARGV2}")
+  endif()
+  _catalog_add_recipe(${PACKAGE_NAME} ${RECIPE_SOURCE} ${RECIPE_KIND})
 endfunction()
 
 function(_catalog_impl_add_dependency)
@@ -95,6 +99,8 @@ function(_catalog_impl_add_dependency)
     endif()
   endif()
   
+  _catalog_canonical_package_name("${PACKAGE_NAME}" PACKAGE_NAME)
+
   _catalog_resolve_dependency("${PACKAGE_NAME}" "${REQ_TYPE}" "${VERSION_SPEC}" "${OPTION_OVERRIDES}" "${PATCH_OVERRIDES}" "${FORCE_SOURCE}")
   
   if(NOT TARGET_NAME STREQUAL "")
@@ -139,6 +145,8 @@ function(_catalog_setup_aliases)
     "add_dependency:_catalog_impl_add_dependency"
     "add_dep:_catalog_impl_add_dependency"
     "import_source:_catalog_impl_import_source"
+    "install_files:_catalog_impl_install_files"
+    "set_version:_catalog_impl_set_version"
     "repo_file:_catalog_impl_repo_file"
     "format_pkgconfig_req:_catalog_format_pkgconfig_req"
     "is_var_defined:_catalog_is_var_defined"
