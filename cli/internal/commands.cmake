@@ -29,6 +29,9 @@ RECIPE OPTIONS
   --recipe NAME=SRC  Single recipe, like catalog_add_recipe() (repeatable; applied last)
   --no-default-repo  Do not load the official repo (catalog-cmake/repo, or $CATALOG_DEFAULT_REPO)
   --refresh          Re-download cached recipes and sources
+                     Recipes that are not in the official repo are shown before they run and
+                     confirmed (default yes). No question in CI / non-interactive sessions; -y
+                     only prints where the recipe comes from.
 
 INSTALL OPTIONS
   --lib, --exe         Install the library or the application of a package (both can be given).
@@ -434,6 +437,45 @@ function(_cl_canonical_name NAME_VAR SOURCE_VAR KINDS_VAR)
     set(${SOURCE_VAR} "${CANON}" PARENT_SCOPE)
   endif()
   set(${KINDS_VAR} "${R_kinds}" PARENT_SCOPE)
+  foreach(K official lib_origin lib_path lib_file exe_origin exe_path exe_file)
+    set(CL_RECIPE_${K} "${R_${K}}" PARENT_SCOPE)
+  endforeach()
+endfunction()
+
+function(_cl_review_recipe NAME KIND)
+  set(ORIGIN "${CL_RECIPE_${KIND}_origin}")
+  set(FILE "${CL_RECIPE_${KIND}_file}")
+  if("${FILE}" STREQUAL "" OR ("${ORIGIN}" STREQUAL "${CL_RECIPE_official}" AND NOT "${ORIGIN}" STREQUAL ""))
+    return()
+  endif()
+
+  _cl_label("${NAME}" "${KIND}" LABEL)
+  if(ORIGIN STREQUAL "direct")
+    set(WHERE "${CL_RECIPE_${KIND}_path}")
+  else()
+    set(WHERE "the repository ${ORIGIN} (${CL_RECIPE_${KIND}_path})")
+  endif()
+
+  if(CL_OPT_YES)
+    _cl_info("${LABEL}: using the recipe from ${WHERE}, which is not in the official repo")
+    return()
+  endif()
+
+  file(READ "${FILE}" CONTENT)
+  _cl_info("${LABEL}: this recipe is not in the official repo and runs as CMake code on this machine.\n"
+           "  from: ${WHERE}\n"
+           "----------------------------------------\n${CONTENT}\n----------------------------------------")
+
+  _cl_is_noninteractive(NI)
+  _cl_has_tty(TTY)
+  if(NI OR NOT TTY)
+    _cl_info("${LABEL}: not asking (non-interactive session), continuing with this recipe")
+    return()
+  endif()
+  _cl_confirm("run the recipe for ${LABEL}?" OK DEFAULT_YES)
+  if(NOT OK)
+    _cl_die("${LABEL}: not running the recipe")
+  endif()
 endfunction()
 
 function(_cl_select_kinds NAME AVAILABLE OUT)
@@ -688,6 +730,7 @@ function(_cl_cmd_install)
     _cl_canonical_name(NAME SOURCE AVAILABLE)
     _cl_select_kinds("${NAME}" "${AVAILABLE}" KINDS)
     foreach(KIND ${KINDS})
+      _cl_review_recipe("${NAME}" "${KIND}")
       _cl_install_one("${NAME}" "${KIND}" "${SPEC}" "${SOURCE}" OK)
       if(NOT OK)
         _cl_label("${NAME}" "${KIND}" LABEL)
@@ -847,6 +890,7 @@ function(_cl_cmd_check)
         _cl_say("${LABEL}: installed (${WHO})")
         continue()
       endif()
+      _cl_review_recipe("${NAME}" "${KIND}")
       set(TYPE "${CL_OPT_TYPE}")
       if(KIND STREQUAL "exe")
         set(TYPE "")

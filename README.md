@@ -88,6 +88,12 @@ stage), your package manager (it asks first, or pass `--yes`; never in a cross
 build), then a source build that is installed into the prefix. The prebuilt
 stage is not used by the CLI yet (as of writing).
 
+A recipe is CMake code that runs on your machine. When one does not come from
+the official repo (a `--repo`, a `--recipe`, `gh:owner/repo` or a URL),
+`install` and `check` print it and ask before running it. The question defaults
+to yes and is not asked in CI or any session without a terminal. `--yes` skips
+the listing and just says where the recipe came from.
+
 ## Documentation & Usage
 
 For installation, usage, and recipe authoring instructions please visit our docs
