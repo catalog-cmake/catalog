@@ -1,5 +1,5 @@
 function(_cl_usage)
-  _cl_say("catalog ${CL_VERSION} - command line interface for Catalog
+  _cl_say("catalog ${CL_CLI_VERSION} - command line interface for Catalog
 
 USAGE
   catalog <command> [options] [packages...]
@@ -1512,7 +1512,7 @@ function(_cl_main)
   endif()
 
   if(CL_OPT_SHOW_VERSION OR CL_CMD STREQUAL "version")
-    _cl_say("catalog ${CL_VERSION}")
+    _cl_say("catalog ${CL_CLI_VERSION}")
     return()
   endif()
   if(CL_OPT_HELP OR CL_CMD STREQUAL "help" OR CL_CMD STREQUAL "")

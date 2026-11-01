@@ -1,4 +1,4 @@
-set(CL_VERSION "0.1.0")
+set(CL_CLI_VERSION "0.1.0")
 
 
 function(_cl_say TEXT)

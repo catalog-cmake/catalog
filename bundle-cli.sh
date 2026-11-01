@@ -42,7 +42,7 @@ OUTPUT_FILE="${OUTPUT_FILE:-"${SCRIPT_DIR}/dist/catalog"}"
 mkdir -p "$(dirname "${OUTPUT_FILE}")"
 
 if [[ -z "${VERSION}" ]]; then
-  VERSION="$(sed -nE 's/^set\(CL_VERSION "([^"]*)"\).*/\1/p' "${UTIL_FILE}")"
+  VERSION="$(sed -nE 's/^set\(CL_CLI_VERSION "([^"]*)"\).*/\1/p' "${UTIL_FILE}")"
   if SHA="$(git -C "${SCRIPT_DIR}" rev-parse --short HEAD 2>/dev/null)"; then
     VERSION="${VERSION}+${SHA}"
   fi
@@ -77,7 +77,7 @@ bundle_cli() {
         exit 1
       fi
       echo "# --- Begin: internal/${rel_path} ---"
-      sed -E "s/^set\(CL_VERSION \"[^\"]*\"\)/set(CL_VERSION \"${VERSION}\")/" "${target_file}"
+      sed -E "s/^set\(CL_CLI_VERSION \"[^\"]*\"\)/set(CL_CLI_VERSION \"${VERSION}\")/" "${target_file}"
       echo ""
       echo "# --- End: internal/${rel_path} ---"
       echo ""
