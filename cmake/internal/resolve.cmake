@@ -5,6 +5,13 @@ set(_CATALOG_CONVENTION_RECIPES "" CACHE INTERNAL "Direct recipes that may have 
 
 function(_catalog_load_repo_meta REPO_SOURCE)
   _catalog_resolve_repo_url(${REPO_SOURCE} RESOLVED_URL REPO_TYPE REPO_BASE REPO_NAME)
+
+  list(FIND _CATALOG_REPOS "${RESOLVED_URL}" _CATALOG_REPO_IDX)
+  if(NOT _CATALOG_REPO_IDX EQUAL -1)
+    _catalog_log_verbose("Repository ${REPO_NAME} (${RESOLVED_URL}) is already loaded, skipping")
+    return()
+  endif()
+
   _catalog_log_verbose("Loading repository ${REPO_NAME} (${REPO_TYPE}) from ${RESOLVED_URL}")
   
   _catalog_load_recipe(${RESOLVED_URL} REPO_FILE)
