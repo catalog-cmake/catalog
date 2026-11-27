@@ -497,15 +497,24 @@ function(_catalog_resolve_dependency PACKAGE_NAME)
   endif()
   
   set(STAGES toolchain system package prebuilt source)
+  set(STAGES_EXPLICIT FALSE)
   
   _catalog_get_var("STAGES" CATALOG_STAGES_VAL)
   if(NOT "${CATALOG_STAGES_VAL}" STREQUAL "")
     set(STAGES ${CATALOG_STAGES_VAL})
+    set(STAGES_EXPLICIT TRUE)
   endif()
   
   _catalog_get_var("${PACKAGE_NAME}_STAGES" PKG_STAGES_VAL)
   if(NOT "${PKG_STAGES_VAL}" STREQUAL "")
     set(STAGES ${PKG_STAGES_VAL})
+    set(STAGES_EXPLICIT TRUE)
+  endif()
+
+  _catalog_is_offline(IS_OFFLINE)
+  if(IS_OFFLINE AND NOT STAGES_EXPLICIT)
+    list(REMOVE_ITEM STAGES package prebuilt)
+    _catalog_log_verbose("${PACKAGE_NAME}: offline mode, skipping the package and prebuilt stages")
   endif()
   
   set(FORCED_STAGE "")

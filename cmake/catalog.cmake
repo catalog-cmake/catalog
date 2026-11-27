@@ -1,4 +1,5 @@
 include(${CMAKE_CURRENT_LIST_DIR}/internal/utils.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/internal/offline.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/internal/recipe.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/internal/resolve.cmake)
 
@@ -150,6 +151,7 @@ function(_catalog_setup_aliases)
     "repo_file:_catalog_impl_repo_file"
     "format_pkgconfig_req:_catalog_format_pkgconfig_req"
     "is_var_defined:_catalog_is_var_defined"
+    "is_offline:_catalog_is_offline"
     "get_var:_catalog_get_var"
     "set_var:_catalog_set_var"
   )

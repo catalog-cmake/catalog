@@ -97,6 +97,15 @@ the official repo (a `--repo`, a `--recipe`, `gh:owner/repo` or a URL),
 to yes and is not asked in CI or any session without a terminal. `--yes` skips
 the listing and just says where the recipe came from.
 
+## Offline builds
+
+For places without network access (for example a Flathub submission) set
+`CATALOG_OFFLINE=ON` and point `CATALOG_VENDOR_DIR` at a directory that holds
+everything. Catalog records what a normal configure used
+(`CATALOG_RECORD_SOURCES`), and `tools/catalog-flatpak-sources.cmake` /
+`tools/catalog-vendor.cmake` turn that into flatpak-builder sources or a vendor
+directory.
+
 ## Documentation & Usage
 
 For installation, usage, and recipe authoring instructions please visit our docs
